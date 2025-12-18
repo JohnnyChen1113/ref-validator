@@ -59,6 +59,57 @@
         .db-chip.selected {
             transform: scale(1.02);
         }
+        /* Line numbers for textarea */
+        .textarea-wrapper {
+            position: relative;
+            display: flex;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .dark .textarea-wrapper {
+            border-color: #4b5563;
+        }
+        .textarea-wrapper:focus-within {
+            border-color: transparent;
+            outline: 2px solid #3b82f6;
+            outline-offset: 0;
+        }
+        .line-numbers {
+            padding: 1rem 0.5rem 1rem 0.75rem;
+            background: #f3f4f6;
+            color: #9ca3af;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            text-align: right;
+            user-select: none;
+            min-width: 2.5rem;
+            overflow: hidden;
+        }
+        .dark .line-numbers {
+            background: #1f2937;
+            color: #6b7280;
+        }
+        .line-numbers div {
+            height: 1.25rem;
+        }
+        .textarea-with-lines {
+            flex: 1;
+            border: none !important;
+            outline: none !important;
+            border-radius: 0 !important;
+            line-height: 1.25rem !important;
+            padding: 1rem !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+            font-size: 0.875rem !important;
+            white-space: pre !important;
+            overflow-x: auto !important;
+        }
+        .textarea-with-lines:focus {
+            box-shadow: none !important;
+            ring: none !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
@@ -128,30 +179,42 @@
             <label id="input-label" class="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                 粘贴文献列表（每行一条，支持多种格式）
             </label>
-            <textarea
-                id="references-input"
-                class="w-full h-48 p-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
-                data-placeholder-zh="示例格式：
-1. Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
-2. Deep learning for natural language processing. arXiv:2103.00020
-3. DOI: 10.1038/s41586-020-2649-2
-4. Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
-                data-placeholder-en="Example formats:
-1. Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
-2. Deep learning for natural language processing. arXiv:2103.00020
-3. DOI: 10.1038/s41586-020-2649-2
-4. Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
-            ></textarea>
+            <div class="textarea-wrapper">
+                <div id="line-numbers" class="line-numbers">
+                    <div>1</div>
+                </div>
+                <textarea
+                    id="references-input"
+                    class="textarea-with-lines w-full h-48 p-4 resize-none font-mono text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
+                    data-placeholder-zh="示例格式：
+Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
+Deep learning for natural language processing. arXiv:2103.00020
+DOI: 10.1038/s41586-020-2649-2
+Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
+                    data-placeholder-en="Example formats:
+Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
+Deep learning for natural language processing. arXiv:2103.00020
+DOI: 10.1038/s41586-020-2649-2
+Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
+                ></textarea>
+            </div>
 
             <!-- Database Selection -->
             <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <div class="flex items-center justify-between mb-3">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300" data-i18n="selectDatabases">选择验证数据库</label>
-                    <button
-                        onclick="resetToDefault()"
-                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                        data-i18n="useDefault"
-                    >使用默认策略</button>
+                    <div class="flex gap-3">
+                        <button
+                            onclick="selectAllDatabases()"
+                            class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            data-i18n="selectAll"
+                        >Select All</button>
+                        <button
+                            onclick="resetToDefault()"
+                            class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            data-i18n="useDefault"
+                        >使用默认策略</button>
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <!-- Crossref -->
@@ -485,6 +548,7 @@
                 inputLabel: '粘贴文献列表（每行一条，支持多种格式）',
                 selectDatabases: '选择验证数据库',
                 useDefault: '使用默认策略',
+                selectAll: '全选',
                 defaultModeHint: '当前：默认策略（第一轮 Crossref + OpenAlex，未找到时询问是否进行第二轮）',
                 customModeHint: '当前：自定义模式（将同时查询所选的所有数据库）',
                 verify: '开始验证',
@@ -546,6 +610,7 @@
                 inputLabel: 'Paste reference list (one per line, multiple formats supported)',
                 selectDatabases: 'Select Databases',
                 useDefault: 'Use Default Strategy',
+                selectAll: 'Select All',
                 defaultModeHint: 'Current: Default strategy (Round 1: Crossref + OpenAlex, then ask for Round 2 if needed)',
                 customModeHint: 'Current: Custom mode (will search all selected databases simultaneously)',
                 verify: 'Verify',
@@ -631,6 +696,28 @@
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
         }
 
+        // ==================== Line Numbers ====================
+        function updateLineNumbers() {
+            const textarea = document.getElementById('references-input');
+            const lineNumbersDiv = document.getElementById('line-numbers');
+            const text = textarea.value;
+            const lines = text.split('\n');
+            const lineCount = Math.max(lines.length, 1);
+
+            // Generate line numbers
+            let html = '';
+            for (let i = 1; i <= lineCount; i++) {
+                html += `<div>${i}</div>`;
+            }
+            lineNumbersDiv.innerHTML = html;
+        }
+
+        function syncScroll() {
+            const textarea = document.getElementById('references-input');
+            const lineNumbersDiv = document.getElementById('line-numbers');
+            lineNumbersDiv.scrollTop = textarea.scrollTop;
+        }
+
         // ==================== Database Selection ====================
         const dbColors = {
             crossref: { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-400 dark:border-blue-600', dot: 'bg-blue-500' },
@@ -682,6 +769,15 @@
             useDefaultStrategy = true;
 
             Object.keys(databases).forEach(db => updateDatabaseUI(db));
+            updateModeHint();
+        }
+
+        function selectAllDatabases() {
+            Object.keys(databases).forEach(db => {
+                databases[db].selected = true;
+                updateDatabaseUI(db);
+            });
+            useDefaultStrategy = false;
             updateModeHint();
         }
 
@@ -1529,6 +1625,7 @@
         // ==================== Clear & Example ====================
         function clearAll() {
             document.getElementById('references-input').value = '';
+            updateLineNumbers();
             document.getElementById('results-section').innerHTML = '';
             document.getElementById('table-body').innerHTML = '';
             document.getElementById('summary-section').classList.add('hidden');
@@ -1554,16 +1651,18 @@ Brown, T. B., et al. (2020). Language models are few-shot learners. arXiv:2005.1
 This is a completely fake reference that does not exist anywhere. Journal of Nonexistent Studies, 2023.
 Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2018). BERT: Pre-training of deep bidirectional transformers for language understanding.
 PMID: 23414506`;
+            updateLineNumbers();
         }
 
         // ==================== Init ====================
         initTheme();
         applyLanguage();
 
-        // Update GitHub links - you'll need to change YOUR_USERNAME to your actual GitHub username
-        document.querySelectorAll('a[href*="YOUR_USERNAME"]').forEach(a => {
-            // Links will work once you update GITHUB_REPO at the top of the script
-        });
+        // Setup line numbers
+        const textarea = document.getElementById('references-input');
+        textarea.addEventListener('input', updateLineNumbers);
+        textarea.addEventListener('scroll', syncScroll);
+        updateLineNumbers();
     </script>
 </body>
 </html>
