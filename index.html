@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文献真伪验证器 | Reference Validator</title>
+    <title>Reference Validator | 文献真伪验证器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -78,7 +78,7 @@
             <!-- Feedback Button -->
             <a
                 id="feedback-btn"
-                href="https://github.com/YOUR_USERNAME/ref-validator/issues/new"
+                href="https://github.com/JohnnyChen1113/ref-validator/issues/new"
                 target="_blank"
                 class="flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors text-sm"
             >
@@ -448,7 +448,7 @@
             <p class="mt-1" data-i18n="disclaimer">验证结果仅供参考，请以官方数据库为准</p>
             <p class="mt-3">
                 <a
-                    href="https://github.com/YOUR_USERNAME/ref-validator/issues/new"
+                    href="https://github.com/JohnnyChen1113/ref-validator/issues/new"
                     target="_blank"
                     class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline"
                 >
@@ -603,7 +603,7 @@
             }
         };
 
-        let currentLang = localStorage.getItem('lang') || 'zh';
+        let currentLang = localStorage.getItem('lang') || 'en';
 
         function toggleLanguage() {
             currentLang = currentLang === 'zh' ? 'en' : 'zh';
