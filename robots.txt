@@ -1,0 +1,7 @@
+# robots.txt for ai2paper.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://ai2paper.com/sitemap.xml
