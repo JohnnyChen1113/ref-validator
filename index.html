@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文献真伪验证器 | Reference Validator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <style>
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        .dark .loader {
+            border-color: #374151;
+            border-top-color: #60a5fa;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .toast {
+            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 1.7s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .pulse-border {
+            animation: pulseBorder 2s ease-in-out infinite;
+        }
+        @keyframes pulseBorder {
+            0%, 100% { border-color: rgb(59, 130, 246); }
+            50% { border-color: rgb(147, 197, 253); }
+        }
+        .db-chip {
+            transition: all 0.2s ease;
+        }
+        .db-chip.selected {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+    <!-- Toast notification -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="toast bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span id="toast-text">已复制到剪贴板</span>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Top Bar with Theme, Language Toggle, and Feedback -->
+        <div class="flex justify-between items-center gap-2 mb-4">
+            <!-- Feedback Button -->
+            <a
+                id="feedback-btn"
+                href="https://github.com/YOUR_USERNAME/ref-validator/issues/new"
+                target="_blank"
+                class="flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors text-sm"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <span data-i18n="feedback">反馈建议</span>
+            </a>
+
+            <div class="flex gap-2">
+                <!-- Language Toggle -->
+                <button
+                    id="lang-toggle"
+                    onclick="toggleLanguage()"
+                    class="flex items-center gap-1 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                    </svg>
+                    <span id="lang-text">EN</span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button
+                    id="theme-toggle"
+                    onclick="toggleTheme()"
+                    class="flex items-center gap-1 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                    <svg id="sun-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <svg id="moon-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 id="main-title" class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">文献真伪验证器</h1>
+            <p id="main-subtitle" class="text-gray-600 dark:text-gray-400">验证 AI 生成的学术引用是否真实存在</p>
+        </header>
+
+        <!-- Input Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <label id="input-label" class="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+                粘贴文献列表（每行一条，支持多种格式）
+            </label>
+            <textarea
+                id="references-input"
+                class="w-full h-48 p-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
+                data-placeholder-zh="示例格式：
+1. Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
+2. Deep learning for natural language processing. arXiv:2103.00020
+3. DOI: 10.1038/s41586-020-2649-2
+4. Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
+                data-placeholder-en="Example formats:
+1. Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
+2. Deep learning for natural language processing. arXiv:2103.00020
+3. DOI: 10.1038/s41586-020-2649-2
+4. Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
+            ></textarea>
+
+            <!-- Database Selection -->
+            <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300" data-i18n="selectDatabases">选择验证数据库</label>
+                    <button
+                        onclick="resetToDefault()"
+                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        data-i18n="useDefault"
+                    >使用默认策略</button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <!-- Crossref -->
+                    <button
+                        id="db-crossref"
+                        onclick="toggleDatabase('crossref')"
+                        class="db-chip selected flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-2 border-blue-400 dark:border-blue-600"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Crossref
+                    </button>
+                    <!-- OpenAlex -->
+                    <button
+                        id="db-openalex"
+                        onclick="toggleDatabase('openalex')"
+                        class="db-chip selected flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 border-2 border-green-400 dark:border-green-600"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        OpenAlex
+                    </button>
+                    <!-- Semantic Scholar -->
+                    <button
+                        id="db-semanticscholar"
+                        onclick="toggleDatabase('semanticscholar')"
+                        class="db-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 border-2 border-transparent"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                        Semantic Scholar
+                    </button>
+                    <!-- PubMed -->
+                    <button
+                        id="db-pubmed"
+                        onclick="toggleDatabase('pubmed')"
+                        class="db-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 border-2 border-transparent"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                        PubMed
+                    </button>
+                    <!-- Europe PMC -->
+                    <button
+                        id="db-europepmc"
+                        onclick="toggleDatabase('europepmc')"
+                        class="db-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 border-2 border-transparent"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                        Europe PMC
+                    </button>
+                </div>
+                <p id="db-mode-hint" class="mt-2 text-xs text-gray-500 dark:text-gray-400" data-i18n="defaultModeHint">
+                    当前：默认策略（第一轮 Crossref + OpenAlex，未找到时询问是否进行第二轮）
+                </p>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-3">
+                <button
+                    id="verify-btn"
+                    onclick="verifyReferences()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                >
+                    <span data-i18n="verify">开始验证</span>
+                </button>
+                <button
+                    onclick="clearAll()"
+                    class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-6 rounded-lg transition-colors"
+                >
+                    <span data-i18n="clear">清空</span>
+                </button>
+                <button
+                    onclick="loadExample()"
+                    class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-6 rounded-lg transition-colors"
+                >
+                    <span data-i18n="loadExample">加载示例</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div id="progress-section" class="hidden mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <div class="flex items-center gap-3">
+                    <div class="loader"></div>
+                    <div>
+                        <span id="progress-text" class="text-gray-600 dark:text-gray-400">正在验证...</span>
+                        <div id="progress-round" class="text-xs text-blue-600 dark:text-blue-400 mt-1"></div>
+                    </div>
+                </div>
+                <div class="mt-3 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Summary -->
+        <div id="summary-section" class="hidden mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <h3 id="summary-title" class="font-medium text-gray-800 dark:text-gray-200 mb-3">验证结果摘要</h3>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
+                        <div id="verified-count" class="text-2xl font-bold text-green-600 dark:text-green-400">0</div>
+                        <div class="text-sm text-green-700 dark:text-green-400" data-i18n="verified">已验证</div>
+                    </div>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/30 rounded-lg p-3">
+                        <div id="partial-count" class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">0</div>
+                        <div class="text-sm text-yellow-700 dark:text-yellow-400" data-i18n="partial">部分匹配</div>
+                    </div>
+                    <div class="bg-red-50 dark:bg-red-900/30 rounded-lg p-3">
+                        <div id="not-found-count" class="text-2xl font-bold text-red-600 dark:text-red-400">0</div>
+                        <div class="text-sm text-red-700 dark:text-red-400" data-i18n="notFound">未找到</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Round Prompt -->
+        <div id="second-round-prompt" class="hidden mb-6">
+            <div class="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4 pulse-border">
+                <div class="flex items-start gap-3">
+                    <div class="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-medium text-blue-800 dark:text-blue-300 mb-2" data-i18n="round2Title">发现未验证的文献</h4>
+                        <p class="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                            <span data-i18n="round2DescPart1">第一轮未找到</span>
+                            <span id="unfound-count" class="font-bold">0</span>
+                            <span data-i18n="round2DescPart2">条文献。是否使用更多数据库进行第二轮验证？</span>
+                        </p>
+                        <div class="flex gap-3">
+                            <button
+                                onclick="startSecondRound()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                            >
+                                <span data-i18n="startRound2">开始第二轮验证</span>
+                            </button>
+                            <button
+                                onclick="skipSecondRound()"
+                                class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                            >
+                                <span data-i18n="skipRound2">跳过</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copy Buttons Section -->
+        <div id="copy-section" class="hidden mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <h3 class="font-medium text-gray-800 dark:text-gray-200 mb-3" data-i18n="quickCopy">快速复制</h3>
+                <div class="flex flex-wrap gap-3">
+                    <button
+                        onclick="copyVerified()"
+                        class="flex items-center gap-2 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60 text-green-700 dark:text-green-400 font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span data-i18n="copyVerified">复制已验证</span>
+                        <span id="verified-copy-count" class="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button
+                        onclick="copyPartial()"
+                        class="flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/40 hover:bg-yellow-200 dark:hover:bg-yellow-900/60 text-yellow-700 dark:text-yellow-400 font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span data-i18n="copyPartial">复制部分匹配</span>
+                        <span id="partial-copy-count" class="bg-yellow-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button
+                        onclick="copyNotFound()"
+                        class="flex items-center gap-2 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 text-red-700 dark:text-red-400 font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span data-i18n="copyNotFound">复制未找到</span>
+                        <span id="notfound-copy-count" class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button
+                        onclick="copyAll()"
+                        class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span data-i18n="copyAll">复制全部</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Toggle -->
+        <div id="view-toggle-section" class="hidden mb-4">
+            <div class="flex gap-2">
+                <button
+                    id="card-view-btn"
+                    onclick="switchView('card')"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                    <span data-i18n="cardView">卡片视图</span>
+                </button>
+                <button
+                    id="table-view-btn"
+                    onclick="switchView('table')"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    <span data-i18n="tableView">表格视图</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Card View -->
+        <div id="results-section" class="space-y-4"></div>
+
+        <!-- Results Table View -->
+        <div id="table-section" class="hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                <!-- Table Filter Buttons -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-wrap gap-2">
+                        <button
+                            onclick="filterTable('all')"
+                            id="filter-all"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-blue-600 text-white transition-colors"
+                        >
+                            <span data-i18n="filterAll">全部</span>
+                            <span id="filter-all-count" class="ml-1 opacity-75"></span>
+                        </button>
+                        <button
+                            onclick="filterTable('not_found')"
+                            id="filter-notfound"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                        >
+                            <span data-i18n="notFound">未找到</span>
+                            <span id="filter-notfound-count" class="ml-1 opacity-75"></span>
+                        </button>
+                        <button
+                            onclick="filterTable('partial')"
+                            id="filter-partial"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
+                        >
+                            <span data-i18n="partial">部分匹配</span>
+                            <span id="filter-partial-count" class="ml-1 opacity-75"></span>
+                        </button>
+                        <button
+                            onclick="filterTable('verified')"
+                            id="filter-verified"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                        >
+                            <span data-i18n="verified">已验证</span>
+                            <span id="filter-verified-count" class="ml-1 opacity-75"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-300">#</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-300" data-i18n="status">状态</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-300" data-i18n="inputTitle">输入标题</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-300" data-i18n="foundTitle">匹配到的标题</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-300" data-i18n="matchScore">匹配度</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-300" data-i18n="engines">引擎</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500 dark:text-gray-500 text-sm">
+            <p><span data-i18n="dataSource">数据来源</span>:
+                <a href="https://www.crossref.org/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Crossref</a> +
+                <a href="https://openalex.org/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">OpenAlex</a> +
+                <a href="https://www.semanticscholar.org/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Semantic Scholar</a> +
+                <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">PubMed</a> +
+                <a href="https://europepmc.org/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Europe PMC</a>
+            </p>
+            <p class="mt-1" data-i18n="disclaimer">验证结果仅供参考，请以官方数据库为准</p>
+            <p class="mt-3">
+                <a
+                    href="https://github.com/YOUR_USERNAME/ref-validator/issues/new"
+                    target="_blank"
+                    class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span data-i18n="feedbackOnGithub">在 GitHub 上反馈问题或建议</span>
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== Configuration ====================
+        // GitHub repository URL - UPDATE THIS after uploading to GitHub
+        const GITHUB_REPO = 'YOUR_USERNAME/ref-validator';
+
+        // Database configuration
+        const databases = {
+            crossref: { selected: true, color: 'blue', round: 1 },
+            openalex: { selected: true, color: 'green', round: 1 },
+            semanticscholar: { selected: false, color: 'purple', round: 2 },
+            pubmed: { selected: false, color: 'orange', round: 2 },
+            europepmc: { selected: false, color: 'teal', round: 2 }
+        };
+
+        let useDefaultStrategy = true;
+
+        // ==================== I18N ====================
+        const i18n = {
+            zh: {
+                mainTitle: '文献真伪验证器',
+                mainSubtitle: '验证 AI 生成的学术引用是否真实存在',
+                inputLabel: '粘贴文献列表（每行一条，支持多种格式）',
+                selectDatabases: '选择验证数据库',
+                useDefault: '使用默认策略',
+                defaultModeHint: '当前：默认策略（第一轮 Crossref + OpenAlex，未找到时询问是否进行第二轮）',
+                customModeHint: '当前：自定义模式（将同时查询所选的所有数据库）',
+                verify: '开始验证',
+                clear: '清空',
+                loadExample: '加载示例',
+                verifying: '正在验证',
+                searchingIn: '正在搜索',
+                summaryTitle: '验证结果摘要',
+                verified: '已验证',
+                partial: '部分匹配',
+                notFound: '未找到',
+                quickCopy: '快速复制',
+                copyVerified: '复制已验证',
+                copyPartial: '复制部分匹配',
+                copyNotFound: '复制未找到',
+                copyAll: '复制全部',
+                dataSource: '数据来源',
+                disclaimer: '验证结果仅供参考，请以官方数据库为准',
+                copied: '已复制到剪贴板',
+                noInput: '请输入要验证的文献列表',
+                noValid: '未检测到有效的文献条目',
+                noDatabase: '请至少选择一个数据库',
+                matchedInfo: '匹配到的文献信息：',
+                title: '标题',
+                authors: '作者',
+                year: '年份',
+                journal: '期刊',
+                citedBy: '被引用',
+                times: '次',
+                notFoundMsg: '在所选数据库中均未找到匹配的文献。',
+                notFoundMsgRound1: '在第一轮数据库中未找到。',
+                notFoundReason: '可能原因：文献不存在、格式解析问题、或数据库未收录。',
+                langToggle: 'EN',
+                round2Title: '发现未验证的文献',
+                round2DescPart1: '第一轮未找到',
+                round2DescPart2: '条文献。是否使用更多数据库进行第二轮验证？',
+                startRound2: '开始第二轮验证',
+                skipRound2: '跳过',
+                round2Found: '第二轮验证找到',
+                pmid: 'PMID',
+                feedback: '反馈建议',
+                feedbackOnGithub: '在 GitHub 上反馈问题或建议',
+                detailView: '详细结果',
+                cardView: '卡片视图',
+                tableView: '表格视图',
+                status: '状态',
+                originalRef: '原始引用',
+                parsedTitle: '解析标题',
+                inputTitle: '输入标题',
+                foundTitle: '匹配到的标题',
+                matchScore: '匹配度',
+                engines: '引擎',
+                filterAll: '全部',
+                noMatch: '未匹配'
+            },
+            en: {
+                mainTitle: 'Reference Validator',
+                mainSubtitle: 'Verify if AI-generated academic citations actually exist',
+                inputLabel: 'Paste reference list (one per line, multiple formats supported)',
+                selectDatabases: 'Select Databases',
+                useDefault: 'Use Default Strategy',
+                defaultModeHint: 'Current: Default strategy (Round 1: Crossref + OpenAlex, then ask for Round 2 if needed)',
+                customModeHint: 'Current: Custom mode (will search all selected databases simultaneously)',
+                verify: 'Verify',
+                clear: 'Clear',
+                loadExample: 'Load Example',
+                verifying: 'Verifying',
+                searchingIn: 'Searching in',
+                summaryTitle: 'Verification Summary',
+                verified: 'Verified',
+                partial: 'Partial Match',
+                notFound: 'Not Found',
+                quickCopy: 'Quick Copy',
+                copyVerified: 'Copy Verified',
+                copyPartial: 'Copy Partial',
+                copyNotFound: 'Copy Not Found',
+                copyAll: 'Copy All',
+                dataSource: 'Data sources',
+                disclaimer: 'Results are for reference only, please verify with official databases',
+                copied: 'Copied to clipboard',
+                noInput: 'Please enter a reference list',
+                noValid: 'No valid reference entries detected',
+                noDatabase: 'Please select at least one database',
+                matchedInfo: 'Matched reference info:',
+                title: 'Title',
+                authors: 'Authors',
+                year: 'Year',
+                journal: 'Journal',
+                citedBy: 'Cited by',
+                times: 'times',
+                notFoundMsg: 'No matching reference found in selected databases.',
+                notFoundMsgRound1: 'Not found in Round 1 databases.',
+                notFoundReason: 'Possible reasons: reference doesn\'t exist, parsing issues, or not indexed.',
+                langToggle: '中文',
+                round2Title: 'Unverified References Found',
+                round2DescPart1: 'Round 1 could not find',
+                round2DescPart2: 'reference(s). Would you like to search additional databases?',
+                startRound2: 'Start Round 2',
+                skipRound2: 'Skip',
+                round2Found: 'Found in Round 2',
+                pmid: 'PMID',
+                feedback: 'Feedback',
+                feedbackOnGithub: 'Report issues or suggestions on GitHub',
+                detailView: 'Detailed Results',
+                cardView: 'Card View',
+                tableView: 'Table View',
+                status: 'Status',
+                originalRef: 'Original Reference',
+                parsedTitle: 'Parsed Title',
+                inputTitle: 'Input Title',
+                foundTitle: 'Found Title',
+                matchScore: 'Score',
+                engines: 'Engines',
+                filterAll: 'All',
+                noMatch: 'No match'
+            }
+        };
+
+        let currentLang = localStorage.getItem('lang') || 'zh';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('lang', currentLang);
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const t = i18n[currentLang];
+            document.getElementById('main-title').textContent = t.mainTitle;
+            document.getElementById('main-subtitle').textContent = t.mainSubtitle;
+            document.getElementById('input-label').textContent = t.inputLabel;
+            document.getElementById('summary-title').textContent = t.summaryTitle;
+            document.getElementById('lang-text').textContent = t.langToggle;
+
+            const textarea = document.getElementById('references-input');
+            textarea.placeholder = textarea.getAttribute(`data-placeholder-${currentLang}`);
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            updateModeHint();
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+        }
+
+        // ==================== Database Selection ====================
+        const dbColors = {
+            crossref: { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-400 dark:border-blue-600', dot: 'bg-blue-500' },
+            openalex: { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-700 dark:text-green-300', border: 'border-green-400 dark:border-green-600', dot: 'bg-green-500' },
+            semanticscholar: { bg: 'bg-purple-100 dark:bg-purple-900/50', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-400 dark:border-purple-600', dot: 'bg-purple-500' },
+            pubmed: { bg: 'bg-orange-100 dark:bg-orange-900/50', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-400 dark:border-orange-600', dot: 'bg-orange-500' },
+            europepmc: { bg: 'bg-teal-100 dark:bg-teal-900/50', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-400 dark:border-teal-600', dot: 'bg-teal-500' }
+        };
+
+        function toggleDatabase(dbName) {
+            databases[dbName].selected = !databases[dbName].selected;
+            updateDatabaseUI(dbName);
+            checkIfCustomMode();
+        }
+
+        function updateDatabaseUI(dbName) {
+            const btn = document.getElementById(`db-${dbName}`);
+            const colors = dbColors[dbName];
+            const dot = btn.querySelector('span');
+
+            if (databases[dbName].selected) {
+                btn.className = `db-chip selected flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${colors.bg} ${colors.text} border-2 ${colors.border}`;
+                dot.className = `w-2 h-2 rounded-full ${colors.dot}`;
+            } else {
+                btn.className = `db-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 border-2 border-transparent`;
+                dot.className = `w-2 h-2 rounded-full bg-gray-400`;
+            }
+        }
+
+        function checkIfCustomMode() {
+            const defaultState = databases.crossref.selected && databases.openalex.selected &&
+                                !databases.semanticscholar.selected && !databases.pubmed.selected && !databases.europepmc.selected;
+            useDefaultStrategy = defaultState;
+            updateModeHint();
+        }
+
+        function updateModeHint() {
+            const t = i18n[currentLang];
+            const hint = document.getElementById('db-mode-hint');
+            hint.textContent = useDefaultStrategy ? t.defaultModeHint : t.customModeHint;
+        }
+
+        function resetToDefault() {
+            databases.crossref.selected = true;
+            databases.openalex.selected = true;
+            databases.semanticscholar.selected = false;
+            databases.pubmed.selected = false;
+            databases.europepmc.selected = false;
+            useDefaultStrategy = true;
+
+            Object.keys(databases).forEach(db => updateDatabaseUI(db));
+            updateModeHint();
+        }
+
+        // ==================== Theme ====================
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                updateThemeIcons(true);
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeIcons(false);
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcons(isDark);
+        }
+
+        function updateThemeIcons(isDark) {
+            document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
+            document.getElementById('moon-icon').classList.toggle('hidden', isDark);
+        }
+
+        // ==================== Toast ====================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        // ==================== API Endpoints ====================
+        const CROSSREF_API = 'https://api.crossref.org/works';
+        const OPENALEX_API = 'https://api.openalex.org/works';
+        const SEMANTIC_SCHOLAR_API = 'https://api.semanticscholar.org/graph/v1/paper';
+        const PUBMED_SEARCH_API = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+        const PUBMED_SUMMARY_API = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi';
+        const EUROPEPMC_API = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search';
+
+        let lastRequestTime = 0;
+        const MIN_REQUEST_INTERVAL = 150;
+        let allResults = [];
+        let unfoundIndices = [];
+
+        async function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function rateLimitedFetch(url, options = {}) {
+            const now = Date.now();
+            const timeSinceLastRequest = now - lastRequestTime;
+            if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+                await delay(MIN_REQUEST_INTERVAL - timeSinceLastRequest);
+            }
+            lastRequestTime = Date.now();
+            return fetch(url, options);
+        }
+
+        // ==================== Reference Parser ====================
+        function parseReference(ref) {
+            const parsed = { original: ref.trim(), doi: null, title: null, authors: null, year: null, arxiv: null, pmid: null };
+
+            // Extract DOI - be careful with trailing characters
+            // DOI format: 10.prefix/suffix where suffix can contain letters, numbers, dots, dashes, underscores
+            // But we need to handle cases like "DOI:10.1126/sciadv.adg03283." where the trailing digit+period is NOT part of DOI
+            const doiMatch = ref.match(/10\.\d{4,}\/[^\s,;]+/i);
+            if (doiMatch) {
+                let doi = doiMatch[0];
+                // Remove trailing punctuation
+                doi = doi.replace(/[.,;)\]]+$/, '');
+                // Special case: if DOI ends with a digit followed by nothing, check if it's a false capture
+                // by looking at context - if the match ends at a period that looks like end-of-sentence, trim trailing digit
+                const fullMatch = doiMatch[0];
+                const afterDoi = ref.substring(ref.indexOf(fullMatch) + fullMatch.length);
+                // If original ended with digit+period and next char is space/newline/end, the digit might be a list number
+                if (/^\d\.$/.test(fullMatch.slice(-2)) && (!afterDoi || /^[\s\n]/.test(afterDoi))) {
+                    doi = doi.slice(0, -1);
+                }
+                parsed.doi = doi;
+            }
+
+            // Extract arXiv ID
+            const arxivMatch = ref.match(/arXiv[:\s]*(\d{4}\.\d{4,5})/i);
+            if (arxivMatch) parsed.arxiv = arxivMatch[1];
+
+            // Extract PMID
+            const pmidMatch = ref.match(/PMID[:\s]*(\d+)/i);
+            if (pmidMatch) parsed.pmid = pmidMatch[1];
+
+            // Extract year
+            const yearMatch = ref.match(/\b(19|20)\d{2}\b/);
+            if (yearMatch) parsed.year = yearMatch[0];
+
+            // Try multiple strategies to extract title
+            // Strategy 1: Title in quotes
+            const quotedTitle = ref.match(/[""]([^""]+)[""]/) || ref.match(/"([^"]+)"/);
+            if (quotedTitle && quotedTitle[1].length > 10) {
+                parsed.title = quotedTitle[1].trim();
+            }
+
+            // Strategy 2: Title after year and period (common format: "Author (2020). Title. Journal")
+            if (!parsed.title) {
+                const afterYearMatch = ref.match(/\(?\d{4}\)?[.,]?\s*([^.]+(?:\.[^.]+)?)\./);
+                if (afterYearMatch && afterYearMatch[1].length > 10) {
+                    // Make sure it's not just author names
+                    const candidate = afterYearMatch[1].trim();
+                    if (!candidate.match(/^[A-Z][a-z]+,?\s+[A-Z]\./)) {
+                        parsed.title = candidate;
+                    }
+                }
+            }
+
+            // Strategy 3: Look for sentence that looks like a title (starts with capital, contains lowercase words)
+            // Format: "Authors. Title sentence here. Journal, Year"
+            if (!parsed.title) {
+                // Split by periods and find a sentence that looks like a title (not author names, not journal)
+                const sentences = ref.split(/\.\s+/);
+                for (const sentence of sentences) {
+                    const trimmed = sentence.trim();
+                    // Skip if too short
+                    if (trimmed.length < 15) continue;
+                    // Skip if looks like author list (mostly "Name, X., Name, Y." pattern)
+                    if (/^[A-Z][a-z]+,?\s+[A-Z]\./.test(trimmed)) continue;
+                    // Skip if looks like journal info (contains volume/page numbers or year at end)
+                    if (/\d+[,:\s]+\d+[-–]\d+/.test(trimmed)) continue;
+                    if (/,\s*\d{4}\s*$/.test(trimmed)) continue;
+                    // Skip if contains DOI
+                    if (/10\.\d{4,}\//.test(trimmed)) continue;
+                    // This looks like a title - should have multiple words, mix of cases
+                    if (/[a-z]{3,}/.test(trimmed) && /\s/.test(trimmed)) {
+                        parsed.title = trimmed.replace(/\.$/, '').trim();
+                        break;
+                    }
+                }
+            }
+
+            // Strategy 4: Everything after author names up to journal/year
+            if (!parsed.title) {
+                // Remove leading number/bracket markers
+                let cleanRef = ref.replace(/^[\d\[\]().\s]+/, '').trim();
+                // Try to find where authors end (usually ends with period before title or year in parens)
+                const authorEndMatch = cleanRef.match(/^([A-Z][a-z]+(?:,?\s*[A-Z]\.?\s*)*(?:(?:,\s*|\s*(?:&|and)\s*)[A-Z][a-z]+(?:,?\s*[A-Z]\.?\s*)*)*)[.,]?\s*(?:\(?\d{4}\)?[.,]?\s*)?(.+)/);
+                if (authorEndMatch && authorEndMatch[2]) {
+                    // Get the part after authors, up to journal info
+                    let titleCandidate = authorEndMatch[2];
+                    // Remove trailing journal/volume info
+                    titleCandidate = titleCandidate.replace(/\.\s*[A-Z][a-z]+(\s+[A-Z][a-z]+)*[,.]?\s*\d+.*$/, '');
+                    titleCandidate = titleCandidate.replace(/\.\s*In\s+.*$/, '');
+                    titleCandidate = titleCandidate.replace(/\.\s*$/, '').trim();
+                    if (titleCandidate.length > 10) {
+                        parsed.title = titleCandidate;
+                    }
+                }
+            }
+
+            // Strategy 5: Fallback - use most of the reference as search query
+            if (!parsed.title) {
+                let cleanRef = ref.replace(/^[\d\[\]().\s]+/, '').trim();
+                // Remove obvious non-title parts
+                cleanRef = cleanRef.replace(/https?:\/\/[^\s]+/g, ''); // URLs
+                cleanRef = cleanRef.replace(/10\.\d{4,}\/[^\s,;]+/g, ''); // DOIs
+                cleanRef = cleanRef.replace(/arXiv[:\s]*\d{4}\.\d{4,5}/gi, ''); // arXiv
+                cleanRef = cleanRef.replace(/PMID[:\s]*\d+/gi, ''); // PMID
+                cleanRef = cleanRef.replace(/DOI[:\s]*/gi, ''); // DOI label
+                cleanRef = cleanRef.replace(/\d{4}[;,.\s]*$/, ''); // Trailing year
+                cleanRef = cleanRef.trim();
+                if (cleanRef.length > 15) {
+                    // Take first meaningful chunk as title
+                    const firstChunk = cleanRef.split(/[.;]/).find(c => c.trim().length > 15);
+                    if (firstChunk) {
+                        parsed.title = firstChunk.trim().substring(0, 200); // Limit length
+                    }
+                }
+            }
+
+            // Extract authors (simplified)
+            const authorMatch = ref.match(/^[\d\[\]().\s]*([A-Z][a-z]+(?:,?\s+[A-Z]\.?\s*)+(?:(?:,?\s*(?:&|and|,)\s*)?[A-Z][a-z]+(?:,?\s+[A-Z]\.?\s*)+)*)/);
+            if (authorMatch) parsed.authors = authorMatch[1].trim();
+
+            return parsed;
+        }
+
+        // Normalize text for better matching
+        function normalizeText(str) {
+            return str
+                .toLowerCase()
+                .replace(/[^\w\s]/g, ' ')  // Remove punctuation
+                .replace(/\s+/g, ' ')      // Collapse whitespace
+                .trim();
+        }
+
+        // Calculate similarity between two strings using improved Jaccard
+        function calculateSimilarity(str1, str2) {
+            const norm1 = normalizeText(str1);
+            const norm2 = normalizeText(str2);
+
+            // Get significant words (length > 2)
+            const words1 = new Set(norm1.split(/\s+/).filter(w => w.length > 2));
+            const words2 = new Set(norm2.split(/\s+/).filter(w => w.length > 2));
+
+            if (words1.size === 0 || words2.size === 0) return 0;
+
+            const intersection = new Set([...words1].filter(x => words2.has(x)));
+            const union = new Set([...words1, ...words2]);
+            const jaccard = union.size > 0 ? intersection.size / union.size : 0;
+
+            // Also check for substring containment (for partial title matches)
+            const containsBonus = (norm1.includes(norm2) || norm2.includes(norm1)) ? 0.2 : 0;
+
+            return Math.min(1, jaccard + containsBonus);
+        }
+
+        // Similarity threshold - lowered for better recall
+        const SIMILARITY_THRESHOLD = 0.5;
+
+        // ==================== Search Functions ====================
+        async function searchCrossref(parsed) {
+            try {
+                let url;
+                // Try DOI lookup first (exact match only)
+                if (parsed.doi) {
+                    url = `${CROSSREF_API}/${encodeURIComponent(parsed.doi)}`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return { source: 'Crossref', found: true, confidence: 'high', data: {
+                            title: data.message.title?.[0], doi: data.message.DOI,
+                            authors: data.message.author?.map(a => `${a.given || ''} ${a.family || ''}`).join(', '),
+                            year: data.message.published?.['date-parts']?.[0]?.[0],
+                            journal: data.message['container-title']?.[0], url: data.message.URL
+                        }};
+                    }
+                    // DOI failed - fall through to title search
+                }
+                // Title search as fallback (runs even if DOI was provided but failed)
+                if (parsed.title) {
+                    url = `${CROSSREF_API}?query.title=${encodeURIComponent(parsed.title)}&rows=3`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.message.items?.length > 0) {
+                            const item = data.message.items[0];
+                            const sim = calculateSimilarity(parsed.title, item.title?.[0] || '');
+                            if (sim >= SIMILARITY_THRESHOLD) return { source: 'Crossref', found: true, confidence: sim > 0.8 ? 'high' : 'medium', similarity: sim, data: {
+                                title: item.title?.[0], doi: item.DOI,
+                                authors: item.author?.map(a => `${a.given || ''} ${a.family || ''}`).join(', '),
+                                year: item.published?.['date-parts']?.[0]?.[0],
+                                journal: item['container-title']?.[0], url: item.URL
+                            }};
+                        }
+                    }
+                }
+                return { source: 'Crossref', found: false };
+            } catch (e) { return { source: 'Crossref', found: false, error: e.message }; }
+        }
+
+        async function searchOpenAlex(parsed) {
+            try {
+                let url;
+                // Try DOI lookup first (exact match only)
+                if (parsed.doi) {
+                    url = `${OPENALEX_API}/https://doi.org/${encodeURIComponent(parsed.doi)}`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return { source: 'OpenAlex', found: true, confidence: 'high', data: {
+                            title: data.title, doi: data.doi?.replace('https://doi.org/', ''),
+                            authors: data.authorships?.map(a => a.author?.display_name).join(', '),
+                            year: data.publication_year, journal: data.primary_location?.source?.display_name,
+                            url: data.id, cited_by_count: data.cited_by_count
+                        }};
+                    }
+                    // DOI failed - fall through to title search
+                }
+                // Title search as fallback (runs even if DOI was provided but failed)
+                if (parsed.title) {
+                    url = `${OPENALEX_API}?search=${encodeURIComponent(parsed.title)}&per_page=3`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.results?.length > 0) {
+                            const item = data.results[0];
+                            const sim = calculateSimilarity(parsed.title, item.title || '');
+                            if (sim >= SIMILARITY_THRESHOLD) return { source: 'OpenAlex', found: true, confidence: sim > 0.8 ? 'high' : 'medium', similarity: sim, data: {
+                                title: item.title, doi: item.doi?.replace('https://doi.org/', ''),
+                                authors: item.authorships?.map(a => a.author?.display_name).join(', '),
+                                year: item.publication_year, journal: item.primary_location?.source?.display_name,
+                                url: item.id, cited_by_count: item.cited_by_count
+                            }};
+                        }
+                    }
+                }
+                return { source: 'OpenAlex', found: false };
+            } catch (e) { return { source: 'OpenAlex', found: false, error: e.message }; }
+        }
+
+        async function searchSemanticScholar(parsed) {
+            try {
+                let url;
+                if (parsed.doi) {
+                    url = `${SEMANTIC_SCHOLAR_API}/DOI:${encodeURIComponent(parsed.doi)}?fields=title,authors,year,citationCount,venue`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return { source: 'Semantic Scholar', found: true, confidence: 'high', data: {
+                            title: data.title, authors: data.authors?.map(a => a.name).join(', '),
+                            year: data.year, journal: data.venue, cited_by_count: data.citationCount,
+                            url: `https://www.semanticscholar.org/paper/${data.paperId}`
+                        }};
+                    }
+                }
+                if (parsed.arxiv) {
+                    url = `${SEMANTIC_SCHOLAR_API}/ARXIV:${parsed.arxiv}?fields=title,authors,year,citationCount,venue`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return { source: 'Semantic Scholar', found: true, confidence: 'high', data: {
+                            title: data.title, authors: data.authors?.map(a => a.name).join(', '),
+                            year: data.year, journal: data.venue || 'arXiv', cited_by_count: data.citationCount,
+                            url: `https://www.semanticscholar.org/paper/${data.paperId}`
+                        }};
+                    }
+                }
+                if (parsed.title) {
+                    url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(parsed.title)}&limit=3&fields=title,authors,year,citationCount,venue`;
+                    const response = await rateLimitedFetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.data?.length > 0) {
+                            const item = data.data[0];
+                            const sim = calculateSimilarity(parsed.title, item.title || '');
+                            if (sim >= SIMILARITY_THRESHOLD) return { source: 'Semantic Scholar', found: true, confidence: sim > 0.8 ? 'high' : 'medium', similarity: sim, data: {
+                                title: item.title, authors: item.authors?.map(a => a.name).join(', '),
+                                year: item.year, journal: item.venue, cited_by_count: item.citationCount,
+                                url: `https://www.semanticscholar.org/paper/${item.paperId}`
+                            }};
+                        }
+                    }
+                }
+                return { source: 'Semantic Scholar', found: false };
+            } catch (e) { return { source: 'Semantic Scholar', found: false, error: e.message }; }
+        }
+
+        async function searchPubMed(parsed) {
+            try {
+                let searchTerm = '';
+                if (parsed.doi) searchTerm = `${parsed.doi}[doi]`;
+                else if (parsed.pmid) searchTerm = parsed.pmid;
+                else if (parsed.title) searchTerm = parsed.title;
+                else return { source: 'PubMed', found: false };
+
+                const searchUrl = `${PUBMED_SEARCH_API}?db=pubmed&term=${encodeURIComponent(searchTerm)}&retmode=json&retmax=3`;
+                const searchResponse = await rateLimitedFetch(searchUrl);
+                if (!searchResponse.ok) return { source: 'PubMed', found: false };
+
+                const searchData = await searchResponse.json();
+                const pmids = searchData.esearchresult?.idlist;
+                if (!pmids?.length) return { source: 'PubMed', found: false };
+
+                const summaryUrl = `${PUBMED_SUMMARY_API}?db=pubmed&id=${pmids[0]}&retmode=json`;
+                const summaryResponse = await rateLimitedFetch(summaryUrl);
+                if (!summaryResponse.ok) return { source: 'PubMed', found: false };
+
+                const summaryData = await summaryResponse.json();
+                const article = summaryData.result?.[pmids[0]];
+                if (!article || article.error) return { source: 'PubMed', found: false };
+
+                if (parsed.title && !parsed.doi && !parsed.pmid) {
+                    const sim = calculateSimilarity(parsed.title, article.title || '');
+                    if (sim < SIMILARITY_THRESHOLD) return { source: 'PubMed', found: false };
+                }
+
+                return { source: 'PubMed', found: true, confidence: 'high', data: {
+                    title: article.title, authors: article.authors?.map(a => a.name).join(', '),
+                    year: article.pubdate?.split(' ')[0], journal: article.source,
+                    pmid: pmids[0], url: `https://pubmed.ncbi.nlm.nih.gov/${pmids[0]}/`
+                }};
+            } catch (e) { return { source: 'PubMed', found: false, error: e.message }; }
+        }
+
+        async function searchEuropePMC(parsed) {
+            try {
+                let query = '';
+                if (parsed.doi) query = `DOI:${parsed.doi}`;
+                else if (parsed.pmid) query = `EXT_ID:${parsed.pmid}`;
+                else if (parsed.title) query = `TITLE:"${parsed.title}"`;
+                else return { source: 'Europe PMC', found: false };
+
+                const url = `${EUROPEPMC_API}?query=${encodeURIComponent(query)}&resultType=core&format=json&pageSize=3`;
+                const response = await rateLimitedFetch(url);
+                if (!response.ok) return { source: 'Europe PMC', found: false };
+
+                const data = await response.json();
+                const results = data.resultList?.result;
+                if (!results?.length) return { source: 'Europe PMC', found: false };
+
+                const item = results[0];
+                if (parsed.title && !parsed.doi && !parsed.pmid) {
+                    const sim = calculateSimilarity(parsed.title, item.title || '');
+                    if (sim < SIMILARITY_THRESHOLD) return { source: 'Europe PMC', found: false };
+                }
+
+                return { source: 'Europe PMC', found: true, confidence: 'high', data: {
+                    title: item.title, authors: item.authorString, year: item.pubYear,
+                    journal: item.journalTitle, doi: item.doi, pmid: item.pmid,
+                    url: `https://europepmc.org/article/${item.source}/${item.id}`
+                }};
+            } catch (e) { return { source: 'Europe PMC', found: false, error: e.message }; }
+        }
+
+        // ==================== Verification Logic ====================
+        async function verifyReference(ref, index, total, selectedDbs) {
+            const parsed = parseReference(ref);
+            const t = i18n[currentLang];
+
+            const dbNames = selectedDbs.join(' + ');
+            document.getElementById('progress-text').textContent =
+                `${t.verifying} ${index + 1}/${total}: ${parsed.title || parsed.original.substring(0, 40)}...`;
+            document.getElementById('progress-round').textContent = `${t.searchingIn}: ${dbNames}`;
+            document.getElementById('progress-bar').style.width = `${((index + 1) / total) * 100}%`;
+
+            const searchPromises = [];
+            if (selectedDbs.includes('crossref')) searchPromises.push(searchCrossref(parsed));
+            if (selectedDbs.includes('openalex')) searchPromises.push(searchOpenAlex(parsed));
+            if (selectedDbs.includes('semanticscholar')) searchPromises.push(searchSemanticScholar(parsed));
+            if (selectedDbs.includes('pubmed')) searchPromises.push(searchPubMed(parsed));
+            if (selectedDbs.includes('europepmc')) searchPromises.push(searchEuropePMC(parsed));
+
+            const results = await Promise.all(searchPromises);
+            const foundResults = results.filter(r => r.found);
+
+            let status = 'not_found', confidence = 'none';
+            if (foundResults.length >= 2) { status = 'verified'; confidence = 'high'; }
+            else if (foundResults.length === 1) {
+                status = foundResults[0].confidence === 'high' ? 'verified' : 'partial';
+                confidence = foundResults[0].confidence;
+            }
+
+            const resultObj = { original: parsed.original, parsed, status, confidence, round: 1 };
+            results.forEach(r => { resultObj[r.source.toLowerCase().replace(' ', '')] = r; });
+            return resultObj;
+        }
+
+        async function verifyReferences() {
+            const t = i18n[currentLang];
+            const input = document.getElementById('references-input').value.trim();
+            if (!input) { alert(t.noInput); return; }
+
+            const references = input.split('\n').map(r => r.trim()).filter(r => r.length > 10);
+            if (!references.length) { alert(t.noValid); return; }
+
+            const selectedDbs = Object.keys(databases).filter(db => databases[db].selected);
+            if (!selectedDbs.length) { alert(t.noDatabase); return; }
+
+            // Reset UI
+            document.getElementById('progress-section').classList.remove('hidden');
+            document.getElementById('summary-section').classList.add('hidden');
+            document.getElementById('copy-section').classList.add('hidden');
+            document.getElementById('second-round-prompt').classList.add('hidden');
+            document.getElementById('results-section').innerHTML = '';
+            document.getElementById('verify-btn').disabled = true;
+            document.getElementById('verify-btn').classList.add('opacity-50');
+
+            allResults = [];
+            unfoundIndices = [];
+
+            try {
+                if (useDefaultStrategy) {
+                    // Default: Round 1 with Crossref + OpenAlex
+                    for (let i = 0; i < references.length; i++) {
+                        const result = await verifyReference(references[i], i, references.length, ['crossref', 'openalex']);
+                        allResults.push(result);
+                        if (result.status === 'not_found') unfoundIndices.push(i);
+                        renderResult(result, i);
+                        await delay(200);
+                    }
+
+                    document.getElementById('progress-section').classList.add('hidden');
+                    updateSummary();
+                    document.getElementById('summary-section').classList.remove('hidden');
+                    document.getElementById('view-toggle-section').classList.remove('hidden');
+
+                    if (unfoundIndices.length > 0) {
+                        document.getElementById('unfound-count').textContent = unfoundIndices.length;
+                        document.getElementById('second-round-prompt').classList.remove('hidden');
+                    } else {
+                        document.getElementById('copy-section').classList.remove('hidden');
+                    }
+                } else {
+                    // Custom: Search all selected databases at once
+                    for (let i = 0; i < references.length; i++) {
+                        const result = await verifyReference(references[i], i, references.length, selectedDbs);
+                        allResults.push(result);
+                        renderResult(result, i);
+                        await delay(200);
+                    }
+
+                    document.getElementById('progress-section').classList.add('hidden');
+                    updateSummary();
+                    document.getElementById('summary-section').classList.remove('hidden');
+                    document.getElementById('view-toggle-section').classList.remove('hidden');
+                    document.getElementById('copy-section').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                document.getElementById('progress-section').classList.add('hidden');
+            } finally {
+                // Always re-enable the button
+                document.getElementById('verify-btn').disabled = false;
+                document.getElementById('verify-btn').classList.remove('opacity-50');
+            }
+        }
+
+        async function startSecondRound() {
+            const t = i18n[currentLang];
+            document.getElementById('second-round-prompt').classList.add('hidden');
+            document.getElementById('progress-section').classList.remove('hidden');
+            document.getElementById('verify-btn').disabled = true;
+            document.getElementById('verify-btn').classList.add('opacity-50');
+
+            const round2Dbs = ['semanticscholar', 'pubmed', 'europepmc'];
+
+            try {
+                for (let i = 0; i < unfoundIndices.length; i++) {
+                    const idx = unfoundIndices[i];
+                    const parsed = allResults[idx].parsed;
+
+                    document.getElementById('progress-text').textContent =
+                        `${t.verifying} ${i + 1}/${unfoundIndices.length}: ${parsed.title || parsed.original.substring(0, 40)}...`;
+                    document.getElementById('progress-round').textContent = `${t.searchingIn}: ${round2Dbs.join(' + ')}`;
+                    document.getElementById('progress-bar').style.width = `${((i + 1) / unfoundIndices.length) * 100}%`;
+
+                    const [ssResult, pmResult, epmcResult] = await Promise.all([
+                        searchSemanticScholar(parsed), searchPubMed(parsed), searchEuropePMC(parsed)
+                    ]);
+
+                    const foundResults = [ssResult, pmResult, epmcResult].filter(r => r.found);
+                    if (foundResults.length > 0) {
+                        allResults[idx].status = foundResults[0].confidence === 'high' ? 'verified' : 'partial';
+                        allResults[idx].confidence = foundResults[0].confidence;
+                    }
+
+                    allResults[idx].semanticscholar = ssResult;
+                    allResults[idx].pubmed = pmResult;
+                    allResults[idx].europepmc = epmcResult;
+                    allResults[idx].round = 2;
+
+                    updateRenderedResult(allResults[idx], idx);
+                    await delay(300);
+                }
+
+                document.getElementById('progress-section').classList.add('hidden');
+                updateSummary();
+                document.getElementById('copy-section').classList.remove('hidden');
+            } catch (error) {
+                console.error('Second round error:', error);
+                document.getElementById('progress-section').classList.add('hidden');
+            } finally {
+                // Always re-enable the button
+                document.getElementById('verify-btn').disabled = false;
+                document.getElementById('verify-btn').classList.remove('opacity-50');
+            }
+        }
+
+        function skipSecondRound() {
+            document.getElementById('second-round-prompt').classList.add('hidden');
+            document.getElementById('copy-section').classList.remove('hidden');
+        }
+
+        function updateSummary() {
+            let verified = 0, partial = 0, notFound = 0;
+            allResults.forEach(r => {
+                if (r.status === 'verified') verified++;
+                else if (r.status === 'partial') partial++;
+                else notFound++;
+            });
+            document.getElementById('verified-count').textContent = verified;
+            document.getElementById('partial-count').textContent = partial;
+            document.getElementById('not-found-count').textContent = notFound;
+            document.getElementById('verified-copy-count').textContent = verified;
+            document.getElementById('partial-copy-count').textContent = partial;
+            document.getElementById('notfound-copy-count').textContent = notFound;
+        }
+
+        // ==================== Rendering ====================
+        function renderResult(result, index) {
+            const t = i18n[currentLang];
+            const statusConfig = {
+                verified: { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', icon: '✓', iconBg: 'bg-green-500', label: t.verified, labelClass: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/50' },
+                partial: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-800', icon: '?', iconBg: 'bg-yellow-500', label: t.partial, labelClass: 'text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/50' },
+                not_found: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: '✗', iconBg: 'bg-red-500', label: t.notFound, labelClass: 'text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50' }
+            };
+            const config = statusConfig[result.status];
+            const html = `
+                <div id="result-${index}" class="fade-in ${config.bg} border ${config.border} rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="${config.iconBg} text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold result-icon">${config.icon}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="result-label text-xs font-medium px-2 py-0.5 rounded ${config.labelClass}">${config.label}</span>
+                                <span class="text-xs text-gray-400 dark:text-gray-500">#${index + 1}</span>
+                            </div>
+                            <div class="text-gray-700 dark:text-gray-300 text-sm break-words">${result.original}</div>
+                            <div class="result-details">${buildDetailsHtml(result, t)}</div>
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('results-section').insertAdjacentHTML('beforeend', html);
+        }
+
+        function updateRenderedResult(result, index) {
+            const t = i18n[currentLang];
+            const el = document.getElementById(`result-${index}`);
+            if (!el) return;
+            const statusConfig = {
+                verified: { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', icon: '✓', iconBg: 'bg-green-500', label: t.verified, labelClass: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/50' },
+                partial: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-800', icon: '?', iconBg: 'bg-yellow-500', label: t.partial, labelClass: 'text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/50' },
+                not_found: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: '✗', iconBg: 'bg-red-500', label: t.notFound, labelClass: 'text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50' }
+            };
+            const config = statusConfig[result.status];
+            el.className = `fade-in ${config.bg} border ${config.border} rounded-lg p-4`;
+            el.querySelector('.result-icon').className = `${config.iconBg} text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold result-icon`;
+            el.querySelector('.result-icon').textContent = config.icon;
+            el.querySelector('.result-label').className = `result-label text-xs font-medium px-2 py-0.5 rounded ${config.labelClass}`;
+            el.querySelector('.result-label').textContent = config.label;
+            el.querySelector('.result-details').innerHTML = buildDetailsHtml(result, t);
+        }
+
+        function buildDetailsHtml(result, t) {
+            const sources = ['crossref', 'openalex', 'semanticscholar', 'pubmed', 'europepmc'];
+            const allFound = sources.map(s => result[s]).filter(r => r?.found);
+
+            if (allFound.length > 0) {
+                const d = allFound[0].data;
+                const sourceNames = allFound.map(r => r.source).join(' + ');
+                return `
+                    <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700 text-sm">
+                        <div class="font-medium text-gray-800 dark:text-gray-200 mb-2">${t.matchedInfo}</div>
+                        ${d.title ? `<div><span class="text-gray-500 dark:text-gray-400">${t.title}:</span> <span class="text-gray-800 dark:text-gray-200">${d.title}</span></div>` : ''}
+                        ${d.authors ? `<div><span class="text-gray-500 dark:text-gray-400">${t.authors}:</span> <span class="text-gray-800 dark:text-gray-200">${d.authors}</span></div>` : ''}
+                        ${d.year ? `<div><span class="text-gray-500 dark:text-gray-400">${t.year}:</span> <span class="text-gray-800 dark:text-gray-200">${d.year}</span></div>` : ''}
+                        ${d.journal ? `<div><span class="text-gray-500 dark:text-gray-400">${t.journal}:</span> <span class="text-gray-800 dark:text-gray-200">${d.journal}</span></div>` : ''}
+                        ${d.doi ? `<div><span class="text-gray-500 dark:text-gray-400">DOI:</span> <a href="https://doi.org/${d.doi}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">${d.doi}</a></div>` : ''}
+                        ${d.pmid ? `<div><span class="text-gray-500 dark:text-gray-400">${t.pmid}:</span> <a href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">${d.pmid}</a></div>` : ''}
+                        ${d.cited_by_count !== undefined ? `<div><span class="text-gray-500 dark:text-gray-400">${t.citedBy}:</span> <span class="text-gray-800 dark:text-gray-200">${d.cited_by_count} ${t.times}</span></div>` : ''}
+                        <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">${t.dataSource}: ${sourceNames}${result.round === 2 ? ` <span class="text-blue-500">(${t.round2Found})</span>` : ''}</div>
+                    </div>`;
+            }
+            return `<div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">${result.round === 2 ? t.notFoundMsg : t.notFoundMsgRound1}<br>${t.notFoundReason}</div>`;
+        }
+
+        // ==================== Copy Functions ====================
+        function copyVerified() {
+            const t = i18n[currentLang];
+            const text = allResults.filter(r => r.status === 'verified').map(r => r.original).join('\n');
+            if (text) { navigator.clipboard.writeText(text); showToast(t.copied); }
+        }
+        function copyPartial() {
+            const t = i18n[currentLang];
+            const text = allResults.filter(r => r.status === 'partial').map(r => r.original).join('\n');
+            if (text) { navigator.clipboard.writeText(text); showToast(t.copied); }
+        }
+        function copyNotFound() {
+            const t = i18n[currentLang];
+            const text = allResults.filter(r => r.status === 'not_found').map(r => r.original).join('\n');
+            if (text) { navigator.clipboard.writeText(text); showToast(t.copied); }
+        }
+        function copyAll() {
+            const t = i18n[currentLang];
+            const labels = { verified: currentLang === 'zh' ? '[已验证]' : '[Verified]', partial: currentLang === 'zh' ? '[部分匹配]' : '[Partial]', not_found: currentLang === 'zh' ? '[未找到]' : '[Not Found]' };
+            const text = allResults.map(r => `${labels[r.status]} ${r.original}`).join('\n');
+            if (text) { navigator.clipboard.writeText(text); showToast(t.copied); }
+        }
+
+        // ==================== View Switching ====================
+        let currentView = 'card';
+
+        function switchView(view) {
+            currentView = view;
+            const cardBtn = document.getElementById('card-view-btn');
+            const tableBtn = document.getElementById('table-view-btn');
+            const cardSection = document.getElementById('results-section');
+            const tableSection = document.getElementById('table-section');
+
+            if (view === 'card') {
+                cardBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium transition-colors';
+                tableBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors';
+                cardSection.classList.remove('hidden');
+                tableSection.classList.add('hidden');
+            } else {
+                tableBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium transition-colors';
+                cardBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors';
+                cardSection.classList.add('hidden');
+                tableSection.classList.remove('hidden');
+                renderTable();
+            }
+        }
+
+        let currentTableFilter = 'all';
+
+        function filterTable(filter) {
+            currentTableFilter = filter;
+            updateFilterButtons();
+            renderTable();
+        }
+
+        function updateFilterButtons() {
+            const filters = ['all', 'notfound', 'partial', 'verified'];
+            const filterMap = { all: 'all', notfound: 'not_found', partial: 'partial', verified: 'verified' };
+
+            filters.forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                const isActive = (f === 'all' && currentTableFilter === 'all') ||
+                                 (f === 'notfound' && currentTableFilter === 'not_found') ||
+                                 (f === 'partial' && currentTableFilter === 'partial') ||
+                                 (f === 'verified' && currentTableFilter === 'verified');
+
+                if (isActive) {
+                    const colorMap = {
+                        all: 'bg-blue-600 text-white',
+                        notfound: 'bg-red-500 text-white',
+                        partial: 'bg-yellow-500 text-white',
+                        verified: 'bg-green-500 text-white'
+                    };
+                    btn.className = `px-3 py-1.5 rounded-full text-sm font-medium ${colorMap[f]} transition-colors`;
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors';
+                }
+            });
+
+            // Update counts
+            const counts = { all: allResults.length, not_found: 0, partial: 0, verified: 0 };
+            allResults.forEach(r => counts[r.status]++);
+            document.getElementById('filter-all-count').textContent = `(${counts.all})`;
+            document.getElementById('filter-notfound-count').textContent = `(${counts.not_found})`;
+            document.getElementById('filter-partial-count').textContent = `(${counts.partial})`;
+            document.getElementById('filter-verified-count').textContent = `(${counts.verified})`;
+        }
+
+        function renderTable() {
+            const t = i18n[currentLang];
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const statusLabels = {
+                verified: { text: t.verified, class: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400', order: 3 },
+                partial: { text: t.partial, class: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400', order: 2 },
+                not_found: { text: t.notFound, class: 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400', order: 1 }
+            };
+
+            const engineConfig = {
+                crossref: { name: 'CR', baseUrl: 'https://search.crossref.org/?q=', color: 'text-blue-600 dark:text-blue-400' },
+                openalex: { name: 'OA', baseUrl: 'https://openalex.org/works?search=', color: 'text-green-600 dark:text-green-400' },
+                semanticscholar: { name: 'S2', baseUrl: 'https://www.semanticscholar.org/search?q=', color: 'text-purple-600 dark:text-purple-400' },
+                pubmed: { name: 'PM', baseUrl: 'https://pubmed.ncbi.nlm.nih.gov/?term=', color: 'text-orange-600 dark:text-orange-400' },
+                europepmc: { name: 'EU', baseUrl: 'https://europepmc.org/search?query=', color: 'text-teal-600 dark:text-teal-400' }
+            };
+
+            // Filter results
+            let filteredResults = allResults.map((r, i) => ({ ...r, originalIndex: i }));
+            if (currentTableFilter !== 'all') {
+                filteredResults = filteredResults.filter(r => r.status === currentTableFilter);
+            }
+
+            // Sort: not_found first, then partial, then verified
+            filteredResults.sort((a, b) => statusLabels[a.status].order - statusLabels[b.status].order);
+
+            // Update filter button counts
+            updateFilterButtons();
+
+            filteredResults.forEach((result) => {
+                const status = statusLabels[result.status];
+                const inputTitle = result.parsed.title || '-';
+                const searchQuery = encodeURIComponent(result.parsed.title || result.original.substring(0, 100));
+
+                // Find the best match from all sources
+                let bestScore = '-';
+                let foundTitle = t.noMatch;
+                let bestSource = null;
+                const sources = ['crossref', 'openalex', 'semanticscholar', 'pubmed', 'europepmc'];
+
+                sources.forEach(s => {
+                    if (result[s]?.found) {
+                        const sourceData = result[s];
+                        let score = 0;
+                        if (sourceData.similarity) {
+                            score = Math.round(sourceData.similarity * 100);
+                        } else if (sourceData.confidence === 'high') {
+                            score = 100;
+                        }
+
+                        if (bestScore === '-' || score > parseInt(bestScore)) {
+                            bestScore = score + '%';
+                            foundTitle = sourceData.data?.title || t.noMatch;
+                            bestSource = s;
+                        }
+                    }
+                });
+
+                // Truncate titles for display
+                const inputTitleShort = inputTitle.length > 50 ? inputTitle.substring(0, 50) + '...' : inputTitle;
+                const foundTitleShort = foundTitle.length > 50 ? foundTitle.substring(0, 50) + '...' : foundTitle;
+
+                // Build compact engine links
+                const engineLinks = Object.entries(engineConfig).map(([key, config]) => {
+                    const found = result[key]?.found;
+                    const url = result[key]?.data?.url || `${config.baseUrl}${searchQuery}`;
+                    const icon = found ? '✓' : '○';
+                    const linkClass = found ? config.color + ' font-medium' : 'text-gray-400 dark:text-gray-500';
+                    return `<a href="${url}" target="_blank" class="${linkClass} hover:underline text-xs" title="${config.name}">${icon}${config.name}</a>`;
+                }).join(' ');
+
+                // Highlight difference if titles don't match exactly
+                const titlesMatch = inputTitle.toLowerCase().trim() === foundTitle.toLowerCase().trim();
+                const foundTitleClass = result.status === 'not_found'
+                    ? 'text-gray-400 dark:text-gray-500 italic'
+                    : (titlesMatch ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400');
+
+                const row = `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs">${result.originalIndex + 1}</td>
+                        <td class="px-3 py-2">
+                            <span class="px-2 py-0.5 rounded text-xs font-medium ${status.class}">${status.text}</span>
+                        </td>
+                        <td class="px-3 py-2 text-gray-800 dark:text-gray-200 max-w-xs">
+                            <div class="truncate text-xs" title="${inputTitle}">${inputTitleShort}</div>
+                        </td>
+                        <td class="px-3 py-2 max-w-xs">
+                            <div class="truncate text-xs ${foundTitleClass}" title="${foundTitle}">${foundTitleShort}</div>
+                        </td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-400 font-mono text-xs">${bestScore}</td>
+                        <td class="px-3 py-2">
+                            <div class="flex flex-wrap gap-1">${engineLinks}</div>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // ==================== Clear & Example ====================
+        function clearAll() {
+            document.getElementById('references-input').value = '';
+            document.getElementById('results-section').innerHTML = '';
+            document.getElementById('table-body').innerHTML = '';
+            document.getElementById('summary-section').classList.add('hidden');
+            document.getElementById('copy-section').classList.add('hidden');
+            document.getElementById('view-toggle-section').classList.add('hidden');
+            document.getElementById('progress-section').classList.add('hidden');
+            document.getElementById('second-round-prompt').classList.add('hidden');
+            document.getElementById('table-section').classList.add('hidden');
+            document.getElementById('results-section').classList.remove('hidden');
+            allResults = [];
+            unfoundIndices = [];
+            currentView = 'card';
+            // Reset view toggle buttons
+            document.getElementById('card-view-btn').className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium transition-colors';
+            document.getElementById('table-view-btn').className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors';
+        }
+
+        function loadExample() {
+            document.getElementById('references-input').value = `Smith, J., & Johnson, M. (2020). Attention is all you need. Advances in neural information processing systems, 30.
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need. Advances in neural information processing systems, 30.
+DOI: 10.1038/s41586-020-2649-2
+Brown, T. B., et al. (2020). Language models are few-shot learners. arXiv:2005.14165
+This is a completely fake reference that does not exist anywhere. Journal of Nonexistent Studies, 2023.
+Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2018). BERT: Pre-training of deep bidirectional transformers for language understanding.
+PMID: 23414506`;
+        }
+
+        // ==================== Init ====================
+        initTheme();
+        applyLanguage();
+
+        // Update GitHub links - you'll need to change YOUR_USERNAME to your actual GitHub username
+        document.querySelectorAll('a[href*="YOUR_USERNAME"]').forEach(a => {
+            // Links will work once you update GITHUB_REPO at the top of the script
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# 真实文献 (应该被验证通过)
+Lowry, O. H., Rosebrough, N. J., Farr, A. L., & Randall, R. J. (1951). Protein measurement with the Folin phenol reagent. Journal of Biological Chemistry, 193(1), 265–275.
+Watson, J. D., & Crick, F. H. C. (1953). Molecular structure of nucleic acids: A structure for deoxyribose nucleic acid. Nature, 171(4356), 737–738.
+Laemmli, U. K. (1970). Cleavage of structural proteins during the assembly of the head of bacteriophage T4. Nature, 227(5259), 680–685.
+Bradford, M. M. (1976). A rapid and sensitive method for the quantitation of microgram quantities of protein utilizing the principle of protein-dye binding. Analytical Biochemistry, 72(1-2), 248–254.
+Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. Neural Computation, 9(8), 1735–1780.
+Krizhevsky, A., Sutskever, I., & Hinton, G. E. (2012). ImageNet classification with deep convolutional neural networks. Advances in Neural Information Processing Systems, 25.
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30.
+Southern, E. M. (1975). Detection of specific sequences among DNA fragments separated by gel electrophoresis. Journal of Molecular Biology, 98(3), 503–517.
+
+# 虚假/错误文献 (应该被标记为未找到或部分匹配)
+Lowry, O. H., Farr, A. L., Rosebrough, N. J., & Randall, R. J. (1961). Protein measurement with the Biuret reagent. Journal of Biochemistry, 200(1), 100–150.
+Watson, J. D., & Crick, F. H. C. (1963). Structure of RNA: Double helix model. Science, 150(3700), 500–510.
+Laemmli, U. K., & Smith, J. (1975). Protein cleavage in phage assembly. Nature, 250(5460), 100–200.
+Bradford, M. M. (1980). Quantitation of proteins using Coomassie stain. Biochemistry, 80, 300–350.
+Schmidhuber, J., & Hochreiter, S. (2000). Recurrent neural memory. Neural Networks, 10(5), 1000–1050.
+Krizhevsky, A., Sutskever, I., & Hinton, G. (2015). Deep learning for ImageNet. ICML Proceedings.
+Vaswani, A., et al. (2020). Transformers for NLP. NeurIPS, 35.
+Southern, E. M. (1980). Specific DNA detection by hybridization. J Mol Biol, 100(4), 600–700.
+Zhang, L., & Wang, X. (2010). Novel method for quantum protein folding. Quantum Biology Journal, 15(2), 45–60.

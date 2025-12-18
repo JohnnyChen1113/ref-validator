@@ -1,0 +1,149 @@
+### 10 篇真实的现有文章引用（已验证存在，高引用经典论文）
+
+我选择了10篇真实存在的著名科学论文，主要来自生物、物理、计算机科学等领域的高引用经典。这些论文确实存在，我通过可靠来源（如Nature、Google Scholar等）确认过。每个引用提供多种常见格式：**APA**、**MLA**、**Chicago**、**Vancouver** 和 **BibTeX**，以覆盖不同场景。
+
+1. **Lowry蛋白测定法论文**（历史上引用最多的论文之一）  
+   - APA: Lowry, O. H., Rosebrough, N. J., Farr, A. L., & Randall, R. J. (1951). Protein measurement with the Folin phenol reagent. *Journal of Biological Chemistry*, 193(1), 265–275.  
+   - MLA: Lowry, O. H., et al. "Protein Measurement with the Folin Phenol Reagent." *Journal of Biological Chemistry*, vol. 193, no. 1, 1951, pp. 265-275.  
+   - Chicago: Lowry, O. H., N. J. Rosebrough, A. L. Farr, and R. J. Randall. 1951. "Protein Measurement with the Folin Phenol Reagent." *Journal of Biological Chemistry* 193 (1): 265–75.  
+   - Vancouver: Lowry OH, Rosebrough NJ, Farr AL, Randall RJ. Protein measurement with the Folin phenol reagent. J Biol Chem. 1951;193(1):265-275.  
+   - BibTeX: @article{lowry1951protein, title={Protein measurement with the Folin phenol reagent}, author={Lowry, Oliver H and Rosebrough, Nira J and Farr, A Lewis and Randall, Rose J}, journal={Journal of biological chemistry}, volume={193}, number={1}, pages={265--275}, year={1951}}
+
+2. **Watson和Crick DNA双螺旋结构论文**  
+   - APA: Watson, J. D., & Crick, F. H. C. (1953). Molecular structure of nucleic acids: A structure for deoxyribose nucleic acid. *Nature*, 171(4356), 737–738.  
+   - MLA: Watson, J. D., and F. H. C. Crick. "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid." *Nature*, vol. 171, no. 4356, 1953, pp. 737-738.  
+   - Chicago: Watson, J. D., and F. H. C. Crick. 1953. "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid." *Nature* 171 (4356): 737–38.  
+   - Vancouver: Watson JD, Crick FH. Molecular structure of nucleic acids; a structure for deoxyribose nucleic acid. Nature. 1953;171(4356):737-738.  
+   - BibTeX: @article{watson1953molecular, title={Molecular structure of nucleic acids: a structure for deoxyribose nucleic acid}, author={Watson, James D and Crick, Francis HC}, journal={Nature}, volume={171}, number={4356}, pages={737--738}, year={1953}}
+
+3. **Laemmli SDS-PAGE论文**（蛋白电泳经典）  
+   - APA: Laemmli, U. K. (1970). Cleavage of structural proteins during the assembly of the head of bacteriophage T4. *Nature*, 227(5259), 680–685.  
+   - MLA: Laemmli, U. K. "Cleavage of Structural Proteins during the Assembly of the Head of Bacteriophage T4." *Nature*, vol. 227, no. 5259, 1970, pp. 680-685.  
+   - Chicago: Laemmli, U. K. 1970. "Cleavage of Structural Proteins during the Assembly of the Head of Bacteriophage T4." *Nature* 227 (5259): 680–85.  
+   - Vancouver: Laemmli UK. Cleavage of structural proteins during the assembly of the head of bacteriophage T4. Nature. 1970;227(5259):680-685.  
+   - BibTeX: @article{laemmli1970cleavage, title={Cleavage of structural proteins during the assembly of the head of bacteriophage T4}, author={Laemmli, Ulrich K}, journal={Nature}, volume={227}, number={5259}, pages={680--685}, year={1970}}
+
+4. **Bradford蛋白测定法论文**  
+   - APA: Bradford, M. M. (1976). A rapid and sensitive method for the quantitation of microgram quantities of protein utilizing the principle of protein-dye binding. *Analytical Biochemistry*, 72(1-2), 248–254.  
+   - MLA: Bradford, Marion M. "A Rapid and Sensitive Method for the Quantitation of Microgram Quantities of Protein Utilizing the Principle of Protein-Dye Binding." *Analytical Biochemistry*, vol. 72, no. 1-2, 1976, pp. 248-254.  
+   - Chicago: Bradford, Marion M. 1976. "A Rapid and Sensitive Method for the Quantitation of Microgram Quantities of Protein Utilizing the Principle of Protein-Dye Binding." *Analytical Biochemistry* 72 (1-2): 248–54.  
+   - Vancouver: Bradford MM. A rapid and sensitive method for the quantitation of microgram quantities of protein utilizing the principle of protein-dye binding. Anal Biochem. 1976;72(1-2):248-254.  
+   - BibTeX: @article{bradford1976rapid, title={A rapid and sensitive method for the quantitation of microgram quantities of protein utilizing the principle of protein-dye binding}, author={Bradford, Marion M}, journal={Analytical biochemistry}, volume={72}, number={1-2}, pages={248--254}, year={1976}}
+
+5. **Chomsky句法结构论文**（语言学经典，常被科学引用）  
+   - APA: Chomsky, N. (1957). *Syntactic structures*. Mouton.  
+   - MLA: Chomsky, Noam. *Syntactic Structures*. Mouton, 1957.  
+   - Chicago: Chomsky, Noam. 1957. *Syntactic Structures*. The Hague: Mouton.  
+   - Vancouver: Chomsky N. Syntactic structures. The Hague: Mouton; 1957.  
+   - BibTeX: @book{chomsky1957syntactic, title={Syntactic structures}, author={Chomsky, Noam}, year={1957}, publisher={Mouton}}
+
+6. **Hochreiter & Schmidhuber LSTM论文**（深度学习经典）  
+   - APA: Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. *Neural Computation*, 9(8), 1735–1780.  
+   - MLA: Hochreiter, Sepp, and Jürgen Schmidhuber. "Long Short-Term Memory." *Neural Computation*, vol. 9, no. 8, 1997, pp. 1735-1780.  
+   - Chicago: Hochreiter, Sepp, and Jürgen Schmidhuber. 1997. "Long Short-Term Memory." *Neural Computation* 9 (8): 1735–80.  
+   - Vancouver: Hochreiter S, Schmidhuber J. Long short-term memory. Neural Comput. 1997;9(8):1735-1780.  
+   - BibTeX: @article{hochreiter1997long, title={Long short-term memory}, author={Hochreiter, Sepp and Schmidhuber, J{\"u}rgen}, journal={Neural computation}, volume={9}, number={8}, pages={1735--1780}, year={1997}}
+
+7. **Krizhevsky et al. AlexNet论文**（ImageNet经典）  
+   - APA: Krizhevsky, A., Sutskever, I., & Hinton, G. E. (2012). ImageNet classification with deep convolutional neural networks. *Advances in Neural Information Processing Systems*, 25.  
+   - MLA: Krizhevsky, Alex, et al. "ImageNet Classification with Deep Convolutional Neural Networks." *Advances in Neural Information Processing Systems*, vol. 25, 2012.  
+   - Chicago: Krizhevsky, Alex, Ilya Sutskever, and Geoffrey E. Hinton. 2012. "ImageNet Classification with Deep Convolutional Neural Networks." *Advances in Neural Information Processing Systems* 25.  
+   - Vancouver: Krizhevsky A, Sutskever I, Hinton GE. ImageNet classification with deep convolutional neural networks. Adv Neural Inf Process Syst. 2012;25.  
+   - BibTeX: @inproceedings{krizhevsky2012imagenet, title={Imagenet classification with deep convolutional neural networks}, author={Krizhevsky, Alex and Sutskever, Ilya and Hinton, Geoffrey E}, booktitle={Advances in neural information processing systems}, pages={1097--1105}, year={2012}}
+
+8. **Vaswani et al. Transformer论文**（Attention is All You Need）  
+   - APA: Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., & Polosukhin, I. (2017). Attention is all you need. *Advances in Neural Information Processing Systems*, 30.  
+   - MLA: Vaswani, Ashish, et al. "Attention Is All You Need." *Advances in Neural Information Processing Systems*, vol. 30, 2017.  
+   - Chicago: Vaswani, Ashish, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. "Attention Is All You Need." *Advances in Neural Information Processing Systems* 30.  
+   - Vancouver: Vaswani A, Shazeer N, Parmar N, Uszkoreit J, Jones L, Gomez AN, Kaiser Ł, Polosukhin I. Attention is all you need. Adv Neural Inf Process Syst. 2017;30.  
+   - BibTeX: @inproceedings{vaswani2017attention, title={Attention is all you need}, author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and others}, booktitle={Advances in neural information processing systems}, year={2017}}
+
+9. **Sambrook et al. 分子克隆手册**（实验室经典，常被引用）  
+   - APA: Sambrook, J., Fritsch, E. F., & Maniatis, T. (1989). *Molecular cloning: A laboratory manual* (2nd ed.). Cold Spring Harbor Laboratory Press.  
+   - MLA: Sambrook, Joseph, et al. *Molecular Cloning: A Laboratory Manual*. 2nd ed., Cold Spring Harbor Laboratory Press, 1989.  
+   - Chicago: Sambrook, Joseph, E. F. Fritsch, and T. Maniatis. 1989. *Molecular Cloning: A Laboratory Manual*. 2nd ed. Cold Spring Harbor, NY: Cold Spring Harbor Laboratory Press.  
+   - Vancouver: Sambrook J, Fritsch EF, Maniatis T. Molecular cloning: a laboratory manual. 2nd ed. Cold Spring Harbor (NY): Cold Spring Harbor Laboratory Press; 1989.  
+   - BibTeX: @book{sambrook1989molecular, title={Molecular cloning: a laboratory manual}, author={Sambrook, Joseph and Fritsch, Edward F and Maniatis, Tom}, year={1989}, publisher={Cold Spring Harbor Laboratory Press}}
+
+10. **Southern Blot论文**  
+    - APA: Southern, E. M. (1975). Detection of specific sequences among DNA fragments separated by gel electrophoresis. *Journal of Molecular Biology*, 98(3), 503–517.  
+    - MLA: Southern, E. M. "Detection of Specific Sequences among DNA Fragments Separated by Gel Electrophoresis." *Journal of Molecular Biology*, vol. 98, no. 3, 1975, pp. 503-517.  
+    - Chicago: Southern, E. M. 1975. "Detection of Specific Sequences among DNA Fragments Separated by Gel Electrophoresis." *Journal of Molecular Biology* 98 (3): 503–17.  
+    - Vancouver: Southern EM. Detection of specific sequences among DNA fragments separated by gel electrophoresis. J Mol Biol. 1975;98(3):503-517.  
+    - BibTeX: @article{southern1975detection, title={Detection of specific sequences among DNA fragments separated by gel electrophoresis}, author={Southern, Edwin M}, journal={Journal of molecular biology}, volume={98}, number={3}, pages={503--517}, year={1975}}
+
+### 10 篇包含错误引用信息的虚假/错误引用
+
+这些是基于真实论文故意引入错误的引用（例如错年份、错作者、错标题、错期刊、错卷期等）。错误类型多样：轻微（如年份错1-2年）、明显（如作者错）、完全虚构细节。同样提供多种格式。
+
+1. **虚假Lowry（年份错，作者顺序错）**  
+   - APA: Lowry, O. H., Farr, A. L., Rosebrough, N. J., & Randall, R. J. (1961). Protein measurement with the Biuret reagent. *Journal of Biochemistry*, 200(1), 100–150.  
+   - MLA: Lowry, O. H., et al. "Protein Measurement with the Biuret Reagent." *Journal of Biochemistry*, vol. 200, no. 1, 1961, pp. 100-150.  
+   - Chicago: Lowry, O. H., A. L. Farr, N. J. Rosebrough, and R. J. Randall. 1961. "Protein Measurement with the Biuret Reagent." *Journal of Biochemistry* 200 (1): 100–50.  
+   - Vancouver: Lowry OH, Farr AL, Rosebrough NJ, Randall RJ. Protein measurement with the Biuret reagent. J Biochem. 1961;200(1):100-150.  
+   - BibTeX: @article{lowry1961fake, title={Protein measurement with the Biuret reagent}, author={Lowry, O H and Farr, A L and Rosebrough, N J and Randall, R J}, journal={Journal of Biochemistry}, volume={200}, pages={100--150}, year={1961}}
+
+2. **虚假Watson & Crick（标题错，期刊错）**  
+   - APA: Watson, J. D., & Crick, F. H. C. (1963). Structure of RNA: Double helix model. *Science*, 150(3700), 500–510.  
+   - MLA: Watson, J. D., and F. H. C. Crick. "Structure of RNA: Double Helix Model." *Science*, vol. 150, no. 3700, 1963, pp. 500-510.  
+   - Chicago: Watson, J. D., and F. H. C. Crick. 1963. "Structure of RNA: Double Helix Model." *Science* 150 (3700): 500–10.  
+   - Vancouver: Watson JD, Crick FH. Structure of RNA: double helix model. Science. 1963;150(3700):500-510.  
+   - BibTeX: @article{watson1963fake, title={Structure of RNA: double helix model}, author={Watson, J D and Crick, F H C}, journal={Science}, volume={150}, pages={500--510}, year={1963}}
+
+3. **虚假Laemmli（作者多加一人，卷期错）**  
+   - APA: Laemmli, U. K., & Smith, J. (1975). Protein cleavage in phage assembly. *Nature*, 250(5460), 100–200.  
+   - MLA: Laemmli, U. K., and J. Smith. "Protein Cleavage in Phage Assembly." *Nature*, vol. 250, no. 5460, 1975, pp. 100-200.  
+   - Chicago: Laemmli, U. K., and J. Smith. 1975. "Protein Cleavage in Phage Assembly." *Nature* 250 (5460): 100–200.  
+   - Vancouver: Laemmli UK, Smith J. Protein cleavage in phage assembly. Nature. 1975;250(5460):100-200.  
+   - BibTeX: @article{laemmli1975fake, title={Protein cleavage in phage assembly}, author={Laemmli, U K and Smith, J}, journal={Nature}, volume={250}, pages={100--200}, year={1975}}
+
+4. **虚假Bradford（方法名错，年份错）**  
+   - APA: Bradford, M. M. (1980). Quantitation of proteins using Coomassie stain. *Biochemistry*, 80, 300–350.  
+   - MLA: Bradford, Marion M. "Quantitation of Proteins Using Coomassie Stain." *Biochemistry*, vol. 80, 1980, pp. 300-350.  
+   - Chicago: Bradford, Marion M. 1980. "Quantitation of Proteins Using Coomassie Stain." *Biochemistry* 80: 300–50.  
+   - Vancouver: Bradford MM. Quantitation of proteins using Coomassie stain. Biochemistry. 1980;80:300-350.  
+   - BibTeX: @article{bradford1980fake, title={Quantitation of proteins using Coomassie stain}, author={Bradford, M M}, journal={Biochemistry}, volume={80}, pages={300--350}, year={1980}}
+
+5. **虚假LSTM（作者错，标题略改）**  
+   - APA: Schmidhuber, J., & Hochreiter, S. (2000). Recurrent neural memory. *Neural Networks*, 10(5), 1000–1050.  
+   - MLA: Schmidhuber, Jürgen, and Sepp Hochreiter. "Recurrent Neural Memory." *Neural Networks*, vol. 10, no. 5, 2000, pp. 1000-1050.  
+   - Chicago: Schmidhuber, Jürgen, and Sepp Hochreiter. 2000. "Recurrent Neural Memory." *Neural Networks* 10 (5): 1000–50.  
+   - Vancouver: Schmidhuber J, Hochreiter S. Recurrent neural memory. Neural Netw. 2000;10(5):1000-1050.  
+   - BibTeX: @article{schmidhuber2000fake, title={Recurrent neural memory}, author={Schmidhuber, J and Hochreiter, S}, journal={Neural Networks}, volume={10}, pages={1000--1050}, year={2000}}
+
+6. **虚假AlexNet（年份错，会议错）**  
+   - APA: Krizhevsky, A., Sutskever, I., & Hinton, G. (2015). Deep learning for ImageNet. *ICML Proceedings*.  
+   - MLA: Krizhevsky, Alex, et al. "Deep Learning for ImageNet." *ICML Proceedings*, 2015.  
+   - Chicago: Krizhevsky, Alex, Ilya Sutskever, and Geoffrey Hinton. 2015. "Deep Learning for ImageNet." *ICML Proceedings*.  
+   - Vancouver: Krizhevsky A, Sutskever I, Hinton G. Deep learning for ImageNet. ICML Proc. 2015.  
+   - BibTeX: @inproceedings{krizhevsky2015fake, title={Deep learning for ImageNet}, author={Krizhevsky, A and Sutskever, I and Hinton, G}, booktitle={ICML Proceedings}, year={2015}}
+
+7. **虚假Transformer（作者少一人，标题错）**  
+   - APA: Vaswani, A., et al. (2020). Transformers for NLP. *NeurIPS*, 35.  
+   - MLA: Vaswani, Ashish, et al. "Transformers for NLP." *NeurIPS*, vol. 35, 2020.  
+   - Chicago: Vaswani, Ashish, et al. 2020. "Transformers for NLP." *NeurIPS* 35.  
+   - Vancouver: Vaswani A, et al. Transformers for NLP. NeurIPS. 2020;35.  
+   - BibTeX: @inproceedings{vaswani2020fake, title={Transformers for NLP}, author={Vaswani, A and others}, booktitle={NeurIPS}, volume={35}, year={2020}}
+
+8. **虚假分子克隆（版本错，出版社错）**  
+   - APA: Sambrook, J., & Maniatis, T. (1995). *Molecular cloning manual* (3rd ed.). Harvard University Press.  
+   - MLA: Sambrook, Joseph, and Tom Maniatis. *Molecular Cloning Manual*. 3rd ed., Harvard University Press, 1995.  
+   - Chicago: Sambrook, Joseph, and Tom Maniatis. 1995. *Molecular Cloning Manual*. 3rd ed. Cambridge: Harvard University Press.  
+   - Vancouver: Sambrook J, Maniatis T. Molecular cloning manual. 3rd ed. Cambridge: Harvard University Press; 1995.  
+   - BibTeX: @book{sambrook1995fake, title={Molecular cloning manual}, author={Sambrook, J and Maniatis, T}, year={1995}, edition={3rd}, publisher={Harvard University Press}}
+
+9. **虚假Southern（年份错，页码错）**  
+   - APA: Southern, E. M. (1980). Specific DNA detection by hybridization. *J Mol Biol*, 100(4), 600–700.  
+   - MLA: Southern, E. M. "Specific DNA Detection by Hybridization." *J Mol Biol*, vol. 100, no. 4, 1980, pp. 600-700.  
+   - Chicago: Southern, E. M. 1980. "Specific DNA Detection by Hybridization." *J Mol Biol* 100 (4): 600–700.  
+   - Vancouver: Southern EM. Specific DNA detection by hybridization. J Mol Biol. 1980;100(4):600-700.  
+   - BibTeX: @article{southern1980fake, title={Specific DNA detection by hybridization}, author={Southern, E M}, journal={J Mol Biol}, volume={100}, pages={600--700}, year={1980}}
+
+10. **完全虚构错误引用（不存在的论文）**  
+    - APA: Zhang, L., & Wang, X. (2010). Novel method for quantum protein folding. *Quantum Biology Journal*, 15(2), 45–60.  
+    - MLA: Zhang, Li, and Xiao Wang. "Novel Method for Quantum Protein Folding." *Quantum Biology Journal*, vol. 15, no. 2, 2010, pp. 45-60.  
+    - Chicago: Zhang, Li, and Xiao Wang. 2010. "Novel Method for Quantum Protein Folding." *Quantum Biology Journal* 15 (2): 45–60.  
+    - Vancouver: Zhang L, Wang X. Novel method for quantum protein folding. Quantum Biol J. 2010;15(2):45-60.  
+    - BibTeX: @article{zhang2010fake, title={Novel method for quantum protein folding}, author={Zhang, L and Wang, X}, journal={Quantum Biology Journal}, volume={15}, pages={45--60}, year={2010}}
+
+这些应该能帮助你测试工具对各种格式、轻微/明显错误、以及AI可能生成的虚假引用的检测能力。如果需要更多或调整，请告诉我！
