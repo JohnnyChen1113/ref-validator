@@ -143,7 +143,10 @@
             border: 1px solid #d1d5db;
             border-radius: 0.5rem;
             overflow: hidden;
+            height: 12rem;
+            transition: height 0.3s ease;
         }
+        /* expanded state is handled via inline style in JS */
         .dark .textarea-wrapper {
             border-color: #4b5563;
         }
@@ -163,6 +166,7 @@
             user-select: none;
             min-width: 2.5rem;
             overflow: hidden;
+            height: 100%;
         }
         .dark .line-numbers {
             background: #1f2937;
@@ -262,7 +266,7 @@
                 </div>
                 <textarea
                     id="references-input"
-                    class="textarea-with-lines w-full h-48 p-4 resize-none font-mono text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
+                    class="textarea-with-lines w-full h-full p-4 resize-none font-mono text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
                     data-placeholder-zh="示例格式：
 Smith, J., & Johnson, M. (2020). The impact of AI on scientific research. Nature, 580(7803), 221-228.
 Deep learning for natural language processing. arXiv:2103.00020
@@ -275,6 +279,10 @@ DOI: 10.1038/s41586-020-2649-2
 Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 2021."
                 ></textarea>
             </div>
+            <button id="toggle-expand" onclick="toggleTextareaExpand()" class="w-full flex items-center justify-center gap-1 py-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors">
+                <span data-i18n="expandAll">展开全部</span>
+                <svg id="expand-icon" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
 
             <!-- Database Selection -->
             <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -679,7 +687,16 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 matchScore: '匹配度',
                 engines: '引擎',
                 filterAll: '全部',
-                noMatch: '未匹配'
+                noMatch: '未匹配',
+                expandAll: '展开全部',
+                collapseAll: '收起',
+                mismatchReasons: '不匹配项',
+                titleMismatch: '标题不完全匹配',
+                yearMismatch: '年份不匹配',
+                journalMismatch: '期刊不匹配',
+                titleMatch: '标题匹配',
+                yearMatch: '年份匹配',
+                journalMatch: '期刊匹配'
             },
             en: {
                 mainTitle: 'Reference Validator',
@@ -741,7 +758,16 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 matchScore: 'Score',
                 engines: 'Engines',
                 filterAll: 'All',
-                noMatch: 'No match'
+                noMatch: 'No match',
+                expandAll: 'Expand All',
+                collapseAll: 'Collapse',
+                mismatchReasons: 'Mismatch Details',
+                titleMismatch: 'Title mismatch',
+                yearMismatch: 'Year mismatch',
+                journalMismatch: 'Journal mismatch',
+                titleMatch: 'Title match',
+                yearMatch: 'Year match',
+                journalMatch: 'Journal match'
             }
         };
 
@@ -793,6 +819,31 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             const textarea = document.getElementById('references-input');
             const lineNumbersDiv = document.getElementById('line-numbers');
             lineNumbersDiv.scrollTop = textarea.scrollTop;
+        }
+
+        let textareaExpanded = false;
+        function toggleTextareaExpand() {
+            const wrapper = document.querySelector('.textarea-wrapper');
+            const textarea = document.getElementById('references-input');
+            const icon = document.getElementById('expand-icon');
+            const label = document.querySelector('#toggle-expand [data-i18n="expandAll"], #toggle-expand [data-i18n="collapseAll"]');
+            const t = i18n[currentLang];
+            textareaExpanded = !textareaExpanded;
+            if (textareaExpanded) {
+                const lineCount = Math.max(textarea.value.split('\n').length, 1);
+                const lineHeight = 20; // 1.25rem
+                const padding = 32; // 1rem top + 1rem bottom
+                const neededHeight = Math.min(lineCount * lineHeight + padding, window.innerHeight * 0.8);
+                wrapper.style.height = neededHeight + 'px';
+                icon.style.transform = 'rotate(180deg)';
+                label.setAttribute('data-i18n', 'collapseAll');
+                label.textContent = t.collapseAll;
+            } else {
+                wrapper.style.height = '12rem';
+                icon.style.transform = '';
+                label.setAttribute('data-i18n', 'expandAll');
+                label.textContent = t.expandAll;
+            }
         }
 
         // ==================== Database Selection ====================
@@ -948,20 +999,58 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             const pmidMatch = ref.match(/PMID[:\s]*(\d+)/i);
             if (pmidMatch) parsed.pmid = pmidMatch[1];
 
-            // Extract year
-            const yearMatch = ref.match(/\b(19|20)\d{2}\b/);
-            if (yearMatch) parsed.year = yearMatch[0];
+            // Extract year - prefer year in parentheses at end, e.g. "(2020)"
+            const yearInParens = ref.match(/\(((19|20)\d{2})\)/);
+            const yearPlain = ref.match(/\b((19|20)\d{2})\b/);
+            if (yearInParens) parsed.year = yearInParens[1];
+            else if (yearPlain) parsed.year = yearPlain[1];
 
             // Try multiple strategies to extract title
             // Strategy 1: Title in quotes
-            const quotedTitle = ref.match(/[""]([^""]+)[""]/) || ref.match(/"([^"]+)"/);
+            const quotedTitle = ref.match(/[""\u201c]([^""\u201d]+)[""\u201d]/) || ref.match(/"([^"]+)"/);
             if (quotedTitle && quotedTitle[1].length > 10) {
                 parsed.title = quotedTitle[1].trim();
             }
 
-            // Strategy 2: Title after year and period (common format: "Author (2020). Title. Journal")
+            // Strategy 2: Science/Nature/Cell format - "N. Authors, Title. Journal Vol, Pages (Year)."
+            // The title is the last comma-separated segment before the period that precedes the journal name
             if (!parsed.title) {
-                const afterYearMatch = ref.match(/\(?\d{4}\)?[.,]?\s*([^.]+(?:\.[^.]+)?)\./);
+                // Remove leading number/bracket markers
+                let cleanRef = ref.replace(/^[\d\[\]().\s\t]+/, '').trim();
+                // Journal info: "Journal Vol, Pages (Year)" or "Journal Vol, ArticleID (Year)"
+                // Pages can be: "123-456", "eaay3335", "e1220", etc.
+                const journalMatch = cleanRef.match(/\.\s+([A-Z][A-Za-z\s]+\s+\d+[,:]\s*[\w][\w-]*\s*\(\d{4}\))/);
+                if (journalMatch) {
+                    const beforeJournal = cleanRef.substring(0, cleanRef.indexOf(journalMatch[0]));
+                    // Split by comma and find the first segment that doesn't look like an author name
+                    const parts = beforeJournal.split(/,\s*/);
+                    let titleParts = [];
+                    let foundTitle = false;
+                    for (let i = parts.length - 1; i >= 0; i--) {
+                        const part = parts[i].trim();
+                        // Check if this part looks like an author: "I. Surname" or "Surname" with initials
+                        const isAuthor = /^[A-Z]\.?\s*[A-Z]?\.?\s*[A-Z][a-z]+$/.test(part) ||
+                                         /^[A-Z][a-z]+$/.test(part) ||
+                                         /^[A-Z]\.\s*[A-Z]\./.test(part) ||
+                                         /et\s+al$/.test(part);
+                        if (!isAuthor && part.length > 5) {
+                            titleParts = parts.slice(i);
+                            foundTitle = true;
+                            break;
+                        }
+                    }
+                    if (foundTitle) {
+                        const candidate = titleParts.join(', ').replace(/\.\s*$/, '').trim();
+                        if (candidate.length > 10) {
+                            parsed.title = candidate;
+                        }
+                    }
+                }
+            }
+
+            // Strategy 3: Title after year and period (common format: "Author (2020). Title. Journal")
+            if (!parsed.title) {
+                const afterYearMatch = ref.match(/\((?:19|20)\d{2}\)[.,]?\s*([^.]+(?:\.[^.]+)?)\./);
                 if (afterYearMatch && afterYearMatch[1].length > 10) {
                     // Make sure it's not just author names
                     const candidate = afterYearMatch[1].trim();
@@ -971,7 +1060,7 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 }
             }
 
-            // Strategy 3: Look for sentence that looks like a title (starts with capital, contains lowercase words)
+            // Strategy 4: Look for sentence that looks like a title (starts with capital, contains lowercase words)
             // Format: "Authors. Title sentence here. Journal, Year"
             if (!parsed.title) {
                 // Split by periods and find a sentence that looks like a title (not author names, not journal)
@@ -980,11 +1069,15 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                     const trimmed = sentence.trim();
                     // Skip if too short
                     if (trimmed.length < 15) continue;
-                    // Skip if looks like author list (mostly "Name, X., Name, Y." pattern)
+                    // Skip if looks like author list: "Name, X" or "Name, X." pattern
+                    // (period after initial may be consumed by split)
+                    if (/^[A-Z][a-z]+,?\s+[A-Z]\.?$/.test(trimmed)) continue;
                     if (/^[A-Z][a-z]+,?\s+[A-Z]\./.test(trimmed)) continue;
                     // Skip if looks like journal info (contains volume/page numbers or year at end)
                     if (/\d+[,:\s]+\d+[-–]\d+/.test(trimmed)) continue;
                     if (/,\s*\d{4}\s*$/.test(trimmed)) continue;
+                    // Skip if it's mostly page/year numbers
+                    if (/^[-–\d\s(),]+$/.test(trimmed)) continue;
                     // Skip if contains DOI
                     if (/10\.\d{4,}\//.test(trimmed)) continue;
                     // This looks like a title - should have multiple words, mix of cases
@@ -995,7 +1088,7 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 }
             }
 
-            // Strategy 4: Everything after author names up to journal/year
+            // Strategy 5: Everything after author names up to journal/year
             if (!parsed.title) {
                 // Remove leading number/bracket markers
                 let cleanRef = ref.replace(/^[\d\[\]().\s]+/, '').trim();
@@ -1014,7 +1107,7 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 }
             }
 
-            // Strategy 5: Fallback - use most of the reference as search query
+            // Strategy 6: Fallback - use most of the reference as search query
             if (!parsed.title) {
                 let cleanRef = ref.replace(/^[\d\[\]().\s]+/, '').trim();
                 // Remove obvious non-title parts
@@ -1045,6 +1138,12 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
         function normalizeText(str) {
             return str
                 .toLowerCase()
+                // Normalize scientific notation: N(6), N⁶, N-6, N6 → n6
+                .replace(/([a-z])\((\d+)\)/g, '$1$2')          // N(6) → n6
+                .replace(/([a-z])[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, (m, letter) => {  // N⁶ → n6
+                    const superMap = {'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'};
+                    return letter + m.slice(1).split('').map(c => superMap[c] || c).join('');
+                })
                 .replace(/[^\w\s]/g, ' ')  // Remove punctuation
                 .replace(/\s+/g, ' ')      // Collapse whitespace
                 .trim();
@@ -1055,9 +1154,10 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             const norm1 = normalizeText(str1);
             const norm2 = normalizeText(str2);
 
-            // Get significant words (length > 2)
-            const words1 = new Set(norm1.split(/\s+/).filter(w => w.length > 2));
-            const words2 = new Set(norm2.split(/\s+/).filter(w => w.length > 2));
+            // Get significant words (length > 2) and exclude pure numbers (years, pages, volumes)
+            const isSignificantWord = w => w.length > 2 && !/^\d+$/.test(w);
+            const words1 = new Set(norm1.split(/\s+/).filter(isSignificantWord));
+            const words2 = new Set(norm2.split(/\s+/).filter(isSignificantWord));
 
             if (words1.size === 0 || words2.size === 0) return 0;
 
@@ -1071,7 +1171,18 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             return Math.min(1, jaccard + containsBonus);
         }
 
-        // Similarity threshold - lowered for better recall
+        // Year cross-validation: penalize results where the year doesn't match
+        function validateMatch(sim, parsed, resultData) {
+            let adjustedSim = sim;
+            // If we know the parsed year and the result year, and they don't match, penalize heavily
+            const resultYear = resultData.year || resultData.publication_year;
+            if (parsed.year && resultYear && String(parsed.year) !== String(resultYear)) {
+                adjustedSim -= 0.3;
+            }
+            return adjustedSim;
+        }
+
+        // Similarity threshold
         const SIMILARITY_THRESHOLD = 0.5;
 
         // ==================== Search Functions ====================
@@ -1095,18 +1206,24 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 }
                 // Title search as fallback (runs even if DOI was provided but failed)
                 if (parsed.title) {
-                    url = `${CROSSREF_API}?query.title=${encodeURIComponent(parsed.title)}&rows=3`;
+                    url = `${CROSSREF_API}?query.title=${encodeURIComponent(parsed.title)}&rows=5`;
                     const response = await rateLimitedFetch(url);
                     if (response.ok) {
                         const data = await response.json();
                         if (data.message.items?.length > 0) {
-                            const item = data.message.items[0];
-                            const sim = calculateSimilarity(parsed.title, item.title?.[0] || '');
-                            if (sim >= SIMILARITY_THRESHOLD) return { source: 'Crossref', found: true, confidence: sim > 0.8 ? 'high' : 'medium', similarity: sim, data: {
-                                title: item.title?.[0], doi: item.DOI,
-                                authors: item.author?.map(a => `${a.given || ''} ${a.family || ''}`).join(', '),
-                                year: item.published?.['date-parts']?.[0]?.[0],
-                                journal: item['container-title']?.[0], url: item.URL
+                            // Check all returned items, pick the best match
+                            let bestMatch = null, bestSim = 0;
+                            for (const item of data.message.items) {
+                                let sim = calculateSimilarity(parsed.title, item.title?.[0] || '');
+                                const itemYear = item.published?.['date-parts']?.[0]?.[0];
+                                sim = validateMatch(sim, parsed, { year: itemYear });
+                                if (sim > bestSim) { bestSim = sim; bestMatch = item; }
+                            }
+                            if (bestMatch && bestSim >= SIMILARITY_THRESHOLD) return { source: 'Crossref', found: true, confidence: bestSim > 0.8 ? 'high' : 'medium', similarity: bestSim, data: {
+                                title: bestMatch.title?.[0], doi: bestMatch.DOI,
+                                authors: bestMatch.author?.map(a => `${a.given || ''} ${a.family || ''}`).join(', '),
+                                year: bestMatch.published?.['date-parts']?.[0]?.[0],
+                                journal: bestMatch['container-title']?.[0], url: bestMatch.URL
                             }};
                         }
                     }
@@ -1135,18 +1252,22 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 }
                 // Title search as fallback (runs even if DOI was provided but failed)
                 if (parsed.title) {
-                    url = `${OPENALEX_API}?search=${encodeURIComponent(parsed.title)}&per_page=3`;
+                    url = `${OPENALEX_API}?search=${encodeURIComponent(parsed.title)}&per_page=5`;
                     const response = await rateLimitedFetch(url);
                     if (response.ok) {
                         const data = await response.json();
                         if (data.results?.length > 0) {
-                            const item = data.results[0];
-                            const sim = calculateSimilarity(parsed.title, item.title || '');
-                            if (sim >= SIMILARITY_THRESHOLD) return { source: 'OpenAlex', found: true, confidence: sim > 0.8 ? 'high' : 'medium', similarity: sim, data: {
-                                title: item.title, doi: item.doi?.replace('https://doi.org/', ''),
-                                authors: item.authorships?.map(a => a.author?.display_name).join(', '),
-                                year: item.publication_year, journal: item.primary_location?.source?.display_name,
-                                url: item.id, cited_by_count: item.cited_by_count
+                            let bestMatch = null, bestSim = 0;
+                            for (const item of data.results) {
+                                let sim = calculateSimilarity(parsed.title, item.title || '');
+                                sim = validateMatch(sim, parsed, { year: item.publication_year });
+                                if (sim > bestSim) { bestSim = sim; bestMatch = item; }
+                            }
+                            if (bestMatch && bestSim >= SIMILARITY_THRESHOLD) return { source: 'OpenAlex', found: true, confidence: bestSim > 0.8 ? 'high' : 'medium', similarity: bestSim, data: {
+                                title: bestMatch.title, doi: bestMatch.doi?.replace('https://doi.org/', ''),
+                                authors: bestMatch.authorships?.map(a => a.author?.display_name).join(', '),
+                                year: bestMatch.publication_year, journal: bestMatch.primary_location?.source?.display_name,
+                                url: bestMatch.id, cited_by_count: bestMatch.cited_by_count
                             }};
                         }
                     }
@@ -1183,17 +1304,21 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                     }
                 }
                 if (parsed.title) {
-                    url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(parsed.title)}&limit=3&fields=title,authors,year,citationCount,venue`;
+                    url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(parsed.title)}&limit=5&fields=title,authors,year,citationCount,venue`;
                     const response = await rateLimitedFetch(url);
                     if (response.ok) {
                         const data = await response.json();
                         if (data.data?.length > 0) {
-                            const item = data.data[0];
-                            const sim = calculateSimilarity(parsed.title, item.title || '');
-                            if (sim >= SIMILARITY_THRESHOLD) return { source: 'Semantic Scholar', found: true, confidence: sim > 0.8 ? 'high' : 'medium', similarity: sim, data: {
-                                title: item.title, authors: item.authors?.map(a => a.name).join(', '),
-                                year: item.year, journal: item.venue, cited_by_count: item.citationCount,
-                                url: `https://www.semanticscholar.org/paper/${item.paperId}`
+                            let bestMatch = null, bestSim = 0;
+                            for (const item of data.data) {
+                                let sim = calculateSimilarity(parsed.title, item.title || '');
+                                sim = validateMatch(sim, parsed, { year: item.year });
+                                if (sim > bestSim) { bestSim = sim; bestMatch = item; }
+                            }
+                            if (bestMatch && bestSim >= SIMILARITY_THRESHOLD) return { source: 'Semantic Scholar', found: true, confidence: bestSim > 0.8 ? 'high' : 'medium', similarity: bestSim, data: {
+                                title: bestMatch.title, authors: bestMatch.authors?.map(a => a.name).join(', '),
+                                year: bestMatch.year, journal: bestMatch.venue, cited_by_count: bestMatch.citationCount,
+                                url: `https://www.semanticscholar.org/paper/${bestMatch.paperId}`
                             }};
                         }
                     }
@@ -1487,6 +1612,77 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             el.querySelector('.result-details').innerHTML = buildDetailsHtml(result, t);
         }
 
+        // Check if journal abbreviation matches full name
+        // e.g., "Nat Rev Mol Cell Biol" matches "Nature Reviews Molecular Cell Biology"
+        function journalMatches(abbrev, fullName) {
+            if (!abbrev || !fullName) return false;
+            const a = abbrev.toLowerCase().trim();
+            const f = fullName.toLowerCase().trim();
+            // Direct containment
+            if (a.includes(f) || f.includes(a)) return true;
+            // Abbreviation check: each word in abbrev should be a prefix of a word in fullName
+            const abbrevWords = a.split(/\s+/);
+            const fullWords = f.split(/\s+/);
+            if (abbrevWords.length === 0) return false;
+            let fullIdx = 0;
+            for (const aw of abbrevWords) {
+                let matched = false;
+                while (fullIdx < fullWords.length) {
+                    if (fullWords[fullIdx].startsWith(aw)) {
+                        matched = true;
+                        fullIdx++;
+                        break;
+                    }
+                    fullIdx++;
+                }
+                if (!matched) return false;
+            }
+            return true;
+        }
+
+        function buildMismatchHtml(result, d, t) {
+            if (result.status !== 'partial') return '';
+            const parsed = result.parsed;
+            if (!parsed) return '';
+
+            const checks = [];
+            // Title check
+            if (parsed.title && d.title) {
+                const sim = calculateSimilarity(parsed.title, d.title);
+                if (sim >= 0.8) {
+                    checks.push(`<span class="text-green-600 dark:text-green-400">✓ ${t.titleMatch} (${Math.round(sim * 100)}%)</span>`);
+                } else {
+                    checks.push(`<span class="text-red-600 dark:text-red-400">✗ ${t.titleMismatch} (${Math.round(sim * 100)}%)</span>`);
+                }
+            }
+            // Year check
+            if (parsed.year && d.year) {
+                if (String(parsed.year) === String(d.year)) {
+                    checks.push(`<span class="text-green-600 dark:text-green-400">✓ ${t.yearMatch}</span>`);
+                } else {
+                    checks.push(`<span class="text-red-600 dark:text-red-400">✗ ${t.yearMismatch} (${parsed.year} → ${d.year})</span>`);
+                }
+            }
+            // Journal check - supports abbreviation matching
+            if (d.journal && parsed.original) {
+                // Extract journal-like text from original ref (text after title period, before volume/pages)
+                const refJournal = parsed.original.match(/\.\s+([A-Za-z\s]+?)\s+\d/)?.[1]?.trim() || '';
+                const match = journalMatches(refJournal, d.journal) ||
+                              parsed.original.toLowerCase().includes(d.journal.toLowerCase());
+                if (match) {
+                    checks.push(`<span class="text-green-600 dark:text-green-400">✓ ${t.journalMatch}</span>`);
+                } else {
+                    checks.push(`<span class="text-red-600 dark:text-red-400">✗ ${t.journalMismatch}</span>`);
+                }
+            }
+
+            if (checks.length === 0) return '';
+            return `<div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">${t.mismatchReasons}:</div>
+                <div class="flex flex-wrap gap-2 text-xs">${checks.join('')}</div>
+            </div>`;
+        }
+
         function buildDetailsHtml(result, t) {
             const sources = ['crossref', 'openalex', 'semanticscholar', 'pubmed', 'europepmc'];
             const allFound = sources.map(s => result[s]).filter(r => r?.found);
@@ -1494,6 +1690,7 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             if (allFound.length > 0) {
                 const d = allFound[0].data;
                 const sourceNames = allFound.map(r => r.source).join(' + ');
+                const mismatchHtml = buildMismatchHtml(result, d, t);
                 return `
                     <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700 text-sm">
                         <div class="font-medium text-gray-800 dark:text-gray-200 mb-2">${t.matchedInfo}</div>
@@ -1504,6 +1701,7 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                         ${d.doi ? `<div><span class="text-gray-500 dark:text-gray-400">DOI:</span> <a href="https://doi.org/${d.doi}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">${d.doi}</a></div>` : ''}
                         ${d.pmid ? `<div><span class="text-gray-500 dark:text-gray-400">${t.pmid}:</span> <a href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">${d.pmid}</a></div>` : ''}
                         ${d.cited_by_count !== undefined ? `<div><span class="text-gray-500 dark:text-gray-400">${t.citedBy}:</span> <span class="text-gray-800 dark:text-gray-200">${d.cited_by_count} ${t.times}</span></div>` : ''}
+                        ${mismatchHtml}
                         <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">${t.dataSource}: ${sourceNames}${result.round === 2 ? ` <span class="text-blue-500">(${t.round2Found})</span>` : ''}</div>
                     </div>`;
             }
@@ -1739,6 +1937,18 @@ PMID: 23414506`;
         const textarea = document.getElementById('references-input');
         textarea.addEventListener('input', updateLineNumbers);
         textarea.addEventListener('scroll', syncScroll);
+        textarea.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const cleaned = pastedText.split('\n').filter(line => line.trim() !== '').join('\n');
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            const before = this.value.substring(0, start);
+            const after = this.value.substring(end);
+            this.value = before + cleaned + after;
+            this.selectionStart = this.selectionEnd = start + cleaned.length;
+            updateLineNumbers();
+        });
         updateLineNumbers();
     </script>
 </body>
