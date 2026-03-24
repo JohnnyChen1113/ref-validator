@@ -696,7 +696,9 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 journalMismatch: '期刊不匹配',
                 titleMatch: '标题匹配',
                 yearMatch: '年份匹配',
-                journalMatch: '期刊匹配'
+                journalMatch: '期刊匹配',
+                doiMismatch: 'DOI不匹配',
+                doiMatch: 'DOI匹配'
             },
             en: {
                 mainTitle: 'Reference Validator',
@@ -767,7 +769,9 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
                 journalMismatch: 'Journal mismatch',
                 titleMatch: 'Title match',
                 yearMatch: 'Year match',
-                journalMatch: 'Journal match'
+                journalMatch: 'Journal match',
+                doiMismatch: 'DOI mismatch',
+                doiMatch: 'DOI match'
             }
         };
 
@@ -970,7 +974,7 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
 
         // ==================== Reference Parser ====================
         function parseReference(ref) {
-            const parsed = { original: ref.trim(), doi: null, title: null, authors: null, year: null, arxiv: null, pmid: null };
+            const parsed = { original: ref.trim(), doi: null, title: null, authors: null, year: null, arxiv: null, pmid: null, journal: null };
 
             // Extract DOI - be careful with trailing characters
             // DOI format: 10.prefix/suffix where suffix can contain letters, numbers, dots, dashes, underscores
@@ -1130,6 +1134,21 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
             // Extract authors (simplified)
             const authorMatch = ref.match(/^[\d\[\]().\s]*([A-Z][a-z]+(?:,?\s+[A-Z]\.?\s*)+(?:(?:,?\s*(?:&|and|,)\s*)?[A-Z][a-z]+(?:,?\s+[A-Z]\.?\s*)+)*)/);
             if (authorMatch) parsed.authors = authorMatch[1].trim();
+
+            // Extract journal name
+            // Strategy 1: Markdown italic *Journal Name* (common in AI-generated refs)
+            const journalItalicMatch = ref.match(/*([A-Z][A-Za-zs:&]+?)*(?:s*,|s**)/);
+            if (journalItalicMatch && journalItalicMatch[1].length > 3) {
+                parsed.journal = journalItalicMatch[1].trim();
+            }
+            // Strategy 2: After title period, text before volume/issue pattern
+            if (!parsed.journal) {
+                // Look for pattern: ". Journal Name, vol(issue)" or ". Journal Name vol,"
+                const journalAfterTitle = ref.match(/.s+([A-Z][A-Za-zs:&-]+?)s*[,.]?s**?d+*?s*[,(]/);
+                if (journalAfterTitle && journalAfterTitle[1].length > 3 && !journalAfterTitle[1].match(/^(In|And|The|From|With)s*$/i)) {
+                    parsed.journal = journalAfterTitle[1].trim();
+                }
+            }
 
             return parsed;
         }
@@ -1641,48 +1660,65 @@ Machine Learning in Healthcare: A Review. Journal of Medical Internet Research, 
         }
 
         function buildMismatchHtml(result, d, t) {
-            if (result.status !== 'partial') return '';
             const parsed = result.parsed;
             if (!parsed) return '';
 
             const checks = [];
+            let hasMismatch = false;
             // Title check
             if (parsed.title && d.title) {
                 const sim = calculateSimilarity(parsed.title, d.title);
                 if (sim >= 0.8) {
-                    checks.push(`<span class="text-green-600 dark:text-green-400">✓ ${t.titleMatch} (${Math.round(sim * 100)}%)</span>`);
+                    checks.push('<span class="text-green-600 dark:text-green-400">✓ ' + t.titleMatch + ' (' + Math.round(sim * 100) + '%)</span>');
                 } else {
-                    checks.push(`<span class="text-red-600 dark:text-red-400">✗ ${t.titleMismatch} (${Math.round(sim * 100)}%)</span>`);
+                    checks.push('<span class="text-red-600 dark:text-red-400">✗ ' + t.titleMismatch + ' (' + Math.round(sim * 100) + '%)</span>');
+                    hasMismatch = true;
                 }
             }
             // Year check
             if (parsed.year && d.year) {
                 if (String(parsed.year) === String(d.year)) {
-                    checks.push(`<span class="text-green-600 dark:text-green-400">✓ ${t.yearMatch}</span>`);
+                    checks.push('<span class="text-green-600 dark:text-green-400">✓ ' + t.yearMatch + '</span>');
                 } else {
-                    checks.push(`<span class="text-red-600 dark:text-red-400">✗ ${t.yearMismatch} (${parsed.year} → ${d.year})</span>`);
+                    checks.push('<span class="text-red-600 dark:text-red-400">✗ ' + t.yearMismatch + ' (' + parsed.year + ' → ' + d.year + ')</span>');
+                    hasMismatch = true;
+                }
+            }
+            // DOI check
+            if (parsed.doi && d.doi) {
+                const parsedDoiNorm = parsed.doi.toLowerCase().replace(/^https?://doi.org//i, '');
+                const resultDoiNorm = d.doi.toLowerCase().replace(/^https?://doi.org//i, '');
+                if (parsedDoiNorm === resultDoiNorm) {
+                    checks.push('<span class="text-green-600 dark:text-green-400">✓ ' + t.doiMatch + '</span>');
+                } else {
+                    checks.push('<span class="text-red-600 dark:text-red-400">✗ ' + t.doiMismatch + ' (' + parsed.doi + ' → ' + d.doi + ')</span>');
+                    hasMismatch = true;
                 }
             }
             // Journal check - supports abbreviation matching
-            if (d.journal && parsed.original) {
-                // Extract journal-like text from original ref (text after title period, before volume/pages)
-                const refJournal = parsed.original.match(/\.\s+([A-Za-z\s]+?)\s+\d/)?.[1]?.trim() || '';
-                const match = journalMatches(refJournal, d.journal) ||
-                              parsed.original.toLowerCase().includes(d.journal.toLowerCase());
-                if (match) {
-                    checks.push(`<span class="text-green-600 dark:text-green-400">✓ ${t.journalMatch}</span>`);
-                } else {
-                    checks.push(`<span class="text-red-600 dark:text-red-400">✗ ${t.journalMismatch}</span>`);
+            if (d.journal) {
+                const refJournal = parsed.journal || (parsed.original.match(/.s+([A-Za-zs]+?)s+d/) || [])[1] || '';
+                if (refJournal.trim()) {
+                    const rj = refJournal.trim();
+                    const match = journalMatches(rj, d.journal) ||
+                                  d.journal.toLowerCase().includes(rj.toLowerCase()) ||
+                                  rj.toLowerCase().includes(d.journal.toLowerCase());
+                    if (match) {
+                        checks.push('<span class="text-green-600 dark:text-green-400">✓ ' + t.journalMatch + '</span>');
+                    } else {
+                        checks.push('<span class="text-red-600 dark:text-red-400">✗ ' + t.journalMismatch + ' (' + rj + ' → ' + d.journal + ')</span>');
+                        hasMismatch = true;
+                    }
                 }
             }
 
             if (checks.length === 0) return '';
-            return `<div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">${t.mismatchReasons}:</div>
-                <div class="flex flex-wrap gap-2 text-xs">${checks.join('')}</div>
-            </div>`;
+            if (hasMismatch) result.hasWarnings = true;
+            return '<div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">' +
+                '<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">' + t.mismatchReasons + ':</div>' +
+                '<div class="flex flex-wrap gap-2 text-xs">' + checks.join('') + '</div>' +
+            '</div>';
         }
-
         function buildDetailsHtml(result, t) {
             const sources = ['crossref', 'openalex', 'semanticscholar', 'pubmed', 'europepmc'];
             const allFound = sources.map(s => result[s]).filter(r => r?.found);
